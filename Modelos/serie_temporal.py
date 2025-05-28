@@ -49,4 +49,10 @@ class SerieTemporal:
         self._muestraSismica.append(muestra)
 
     def getDatos(self):
-        return self._fechaHoraInicioRegistroMuestras, self._fechaHoraRegistro, self._frecuenciaMuestreo
+        return {
+            'fechaHoraInicioRegistroMuestras': str(self.getFechaHoraInicioRegistroMuestras()) if self.getFechaHoraInicioRegistroMuestras() else 'No disponible',
+            'fechaHoraRegistro': str(self.getFechaHoraRegistro()) if self.getFechaHoraRegistro() else 'No disponible',
+            'frecuenciaMuestreo': self.getFrecuenciaMuestreo() if self.getFrecuenciaMuestreo() is not None else 'No disponible',
+            'condicionAlarma': self.getCondicionAlarma() if self.getCondicionAlarma() is not None else 'No disponible',
+            'muestras': [muestra.getDatos() for muestra in self.getMuestraSismica()]
+        }

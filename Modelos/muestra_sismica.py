@@ -18,6 +18,13 @@ class MuestraSismica:
     def setDetalleMuestraSismica(self, detalleMuestraSismica):
         self.__detalleMuestraSismica = detalleMuestraSismica
 
-# Método para obtener los datos de la muestra sísmica
     def getDatos(self):
-        return self.__fechaHoraMuestra, self.__detalleMuestraSismica
+        detalle = self.getDetalleMuestraSismica()
+        if isinstance(detalle, list):
+            detalles = [d.getDatos() for d in detalle]
+        else:
+            detalles = [detalle.getDatos()]
+        return {
+            'fechaHoraMuestra': str(self.getFechaHoraMuestra()) if self.getFechaHoraMuestra() else 'No disponible',
+            'detalle': detalles
+        }
