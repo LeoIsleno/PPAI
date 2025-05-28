@@ -168,3 +168,21 @@ class EventoSismico:
             self.crearCambioEstado(estadoBloqueado)
             return True
         return False
+
+    def getDatos(self):
+        alcance = self.getAlcanceSismo()
+        clasificacion = self.getClasificacion()
+        origen = self.getOrigenGeneracion()
+        return {
+            'alcanceSismo': alcance.getNombre() if alcance else 'No disponible',
+            'clasificacion': clasificacion.getNombre() if clasificacion else 'No disponible',
+            'origenGeneracion': origen.getNombre() if origen else 'No disponible',
+            'descripcionAlcance': alcance.getDescripcion() if alcance else 'No disponible',
+            'valorMagnitud': str(self.getValorMagnitud()),
+            'fechaHoraOcurrencia': self.getFechaHoraOcurrencia().strftime('%Y-%m-%d %H:%M:%S') if self.getFechaHoraOcurrencia() else 'No disponible',
+            'latitudEpicentro': str(self.getLatitudEpicentro()) if self.getLatitudEpicentro() is not None else 'No disponible',
+            'longitudEpicentro': str(self.getLongitudEpicentro()) if self.getLongitudEpicentro() is not None else 'No disponible',
+            'latitudHipocentro': str(self.getLatitudHipocentro()) if self.getLatitudHipocentro() is not None else 'No disponible',
+            'longitudHipocentro': str(self.getLongitudHipocentro()) if self.getLongitudHipocentro() is not None else 'No disponible',
+            'series_temporales': [serie.getDatos() for serie in self.getSerieTemporal()] if isinstance(self.getSerieTemporal(), list) else [self.getSerieTemporal().getDatos()]
+        }
