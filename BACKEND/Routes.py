@@ -24,11 +24,11 @@ eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos()
 def inicio():
     return render_template('index.html')
 
-@app.route('/registrarRevision')
-def retornarDatos():
-    # Usar la lista persistente y filtrar solo los auto-detectados
-    result = gestor.buscarEventosAutoDetectados(eventos_persistentes)
-    return render_template('registrar.html', eventos=result)
+# @app.route('/registrarRevision')
+# def retornarDatos():
+#     # Usar la lista persistente y filtrar solo los auto-detectados
+#     result = gestor.buscarEventosAutoDetectados(eventos_persistentes)
+#     return render_template('registrar.html', eventos=result)
 
 @app.route('/eventos', methods=['POST'])
 def seleccionar_evento():
@@ -53,14 +53,15 @@ def seleccionar_evento():
 
     gestor.tomarSeleccionDeEvento(evento_seleccionado)
 
-    if evento_seleccionado:
-        return jsonify({'success': True, 'redirect': '/mostrar_datos_evento'})
-    else:
-        return jsonify({'success': False, 'error': 'Evento no encontrado'}), 404
+    return jsonify('succes')
+    # if evento_seleccionado:
+    #     return jsonify({'success': True, 'redirect': '/mostrar_datos_evento'})
+    # else:
+    #     return jsonify({'success': False, 'error': 'Evento no encontrado'}), 404
 
-@app.route('/mostrar_datos_evento')
-def mostrar_datos_evento():
-    return render_template('datos_evento.html')
+# @app.route('/mostrar_datos_evento')
+# def mostrar_datos_evento():
+#     return render_template('datos_evento.html')
 
 @app.route('/api/eventos', methods=['GET'])
 def api_eventos():
@@ -70,7 +71,7 @@ def api_eventos():
 
 @app.route('/obtener_datos_evento')
 def obtener_datos_evento():
-    evento = gestor._GestorRevisionManual__eventoSismicoSeleccionado
+    evento = gestor.getGestorRevisionManualEventoSismicoSeleccionado()
     if not evento:
         print("No hay evento seleccionado")
         return jsonify({'success': False, 'error': 'No hay evento seleccionado'}), 404
@@ -104,7 +105,7 @@ def api_origenes():
 
 @app.route('/modificar_datos_evento', methods=['POST'])
 def modificar_datos_evento():
-    evento = gestor._GestorRevisionManual__eventoSismicoSeleccionado
+    evento = gestor.getGestorRevisionManualEventoSismicoSeleccionado()
     if not evento:
         return jsonify({'success': False, 'error': 'No hay evento seleccionado'}), 404
     data = request.json
@@ -126,7 +127,7 @@ def modificar_datos_evento():
 
 @app.route('/ejecutar_accion', methods=['POST'])
 def ejecutar_accion():
-    evento = gestor._GestorRevisionManual__eventoSismicoSeleccionado
+    evento = gestor.getGestorRevisionManualEventoSismicoSeleccionado()
     if not evento:
         return jsonify({'success': False, 'error': 'No hay evento seleccionado'}), 404
 

@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Cargando datos del evento...'); // Debug
 
     // Obtener datos del evento
-    fetch('/obtener_datos_evento')
+    fetch('http://127.0.0.1:5001/obtener_datos_evento')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -33,23 +33,15 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Por favor seleccione una acción');
             return;
         }
-        fetch('/ejecutar_accion', {
+        fetch('http://127.0.0.1:5001/ejecutar_accion', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ accion })
         })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.mensaje || 'Acción ejecutada con éxito');
-                window.location.href = '/'; // Redirigir al índice después de la acción
-            } else {
-                alert(data.error || 'Error al ejecutar la acción');
-            }
-        });
+        window.open('index.html', '_self');
     });
     // Cambia 'selectAlcance' y 'selectOrigen' por 'inputAlcance' y 'inputOrigen' en la carga de selects
-    fetch('/api/alcances')
+    fetch('http://127.0.0.1:5001/api/alcances')
       .then(r => r.json())
       .then(alcances => {
         window.ultimosAlcances = alcances.map(a => a.nombre); // Guarda para reutilizar
@@ -67,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
-    fetch('/api/origenes')
+    fetch('http://127.0.0.1:5001/api/origenes')
       .then(r => r.json())
       .then(origenes => {
         window.ultimosOrigenes = origenes.map(o => o.nombre); // Guarda para reutilizar
@@ -239,7 +231,7 @@ function mostrarError(mensaje) {
 }
 
 // Al recibir los datos del backend, guardar los valores de los selects para reutilizarlos
-fetch('/obtener_datos_evento')
+fetch('http://127.0.0.1:5001/obtener_datos_evento')
     .then(response => response.json())
     .then(data => {
         if (data.success) {

@@ -9,6 +9,7 @@ from Modelos import DetalleMuestraSismica
 from Modelos.MuestraSismica import MuestraSismica
 from Modelos.SerieTemporal import SerieTemporal
 from Modelos.TipoDeDato import TipoDeDato
+from flask import jsonify, url_for
 
 class GestorRevisionManual:
     def __init__(self):
@@ -144,6 +145,9 @@ class GestorRevisionManual:
                     'redirect': url_for('mostrar_datos_evento')
                 })
 
+    def getGestorRevisionManualEventoSismicoSeleccionado(self):
+        """Retorna el evento sísmico actualmente seleccionado"""
+        return self.__eventoSismicoSeleccionado
 
 
 
