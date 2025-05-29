@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+    
 
     // Manejar el botón cancelar
     if (cancelButton) {
