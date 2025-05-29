@@ -35,6 +35,7 @@ class GestorRevisionManual:
                 datosEvento = evento.mostrarDatosEventoSismico()
                 eventosAutodetectados.append(datosEvento)
         
+        return eventosAutodetectados
         #return self.ordenarESPorFechaOcurrencia(eventosAutodetectados)
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
