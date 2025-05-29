@@ -19,11 +19,9 @@ class MuestraSismica:
         self.__detalleMuestraSismica = detalleMuestraSismica
 
     def getDatos(self):
-        detalle = self.getDetalleMuestraSismica()
-        if isinstance(detalle, list):
-            detalles = [d.getDatos() for d in detalle]
-        else:
-            detalles = [detalle.getDatos()]
+        detalles = []
+        for d in self.getDetalleMuestraSismica():
+            detalles.append(d.getDatos())  # <--- Cambia esto
         return {
             'fechaHoraMuestra': str(self.getFechaHoraMuestra()) if self.getFechaHoraMuestra() else 'No disponible',
             'detalle': detalles

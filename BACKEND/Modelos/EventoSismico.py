@@ -135,7 +135,6 @@ class EventoSismico:
                 self.getLongitudHipocentro(),
                 self.getValorMagnitud()]
 
-    def bloquear(self):
         estado_bloqueado = Estado("BloqueadoEnRevision", "EventoSismico")
         self.crearCambioEstado(estado_bloqueado)
 
@@ -151,14 +150,73 @@ class EventoSismico:
         self._estadoActual = nuevoEstado
 
     def obtenerDatosSismicos(self):
-        pass
+        """Obtiene los datos sísmicos completos del evento seleccionado recorriendo explícitamente las relaciones"""
+        # Acceso explícito a cada relación
+        alcance = self.getAlcanceSismo()
+        clasificacion = self.getClasificacion()
+        origen = self.getOrigenGeneracion()
+        descripcion_alcance = alcance.getDescripcion() if alcance else 'No disponible'
+        nombre_alcance = alcance.getNombre() if alcance else 'No disponible'
+        nombre_clasificacion = clasificacion.getNombre() if clasificacion else 'No disponible'
+        nombre_origen = origen.getNombre() if origen else 'No disponible'
+        valor_magnitud = self.getValorMagnitud()
+        fecha_hora = self.getFechaHoraOcurrencia()
+        lat_epicentro = self.getLatitudEpicentro()
+        long_epicentro = self.getLongitudEpicentro()
+        lat_hipocentro = self.getLatitudHipocentro()
+        long_hipocentro = self.getLongitudHipocentro()
+        
+        datos = {
+            'alcanceSismo': nombre_alcance,
+            'clasificacion': nombre_clasificacion,
+            'origenGeneracion': nombre_origen,
+            'descripcionAlcance': descripcion_alcance,
+            'valorMagnitud': str(valor_magnitud),
+            'fechaHoraOcurrencia': fecha_hora.strftime('%Y-%m-%d %H:%M:%S') if fecha_hora else 'No disponible',
+            'latitudEpicentro': str(lat_epicentro) if lat_epicentro is not None else 'No disponible',
+            'longitudEpicentro': str(long_epicentro) if long_epicentro is not None else 'No disponible',
+            'latitudHipocentro': str(lat_hipocentro) if lat_hipocentro is not None else 'No disponible',
+            'longitudHipocentro': str(long_hipocentro) if long_hipocentro is not None else 'No disponible'
+        }
+        print("Datos obtenidos:", datos)
+        return datos
 
     def obtenerSeriesTemporales(self):
-        pass
+        """
+        Devuelve una lista con los datos de todas las series temporales asociadas al evento,
+        usando el método getDatos() de cada serie temporal.
+        """
+        series = self.getSerieTemporal()
+        datos_series = []
+        for serie in series:
+            datos = serie.getDatos()  # Suponiendo que getDatos() retorna un dict o similar
+            datos_series.append(datos)
+        return datos_series
+            
+    
+        
 
-    def rechazar(self):
-        estado_rechazado = Estado("Rechazado", "EventoSismico")
-        self.crearCambioEstado(estado_rechazado)
+    def rechazar(self, estadoRechazado: Estado, fechaHoraActual: datetime, usuario):
+        """
+        Cambia el estado del evento a 'Rechazado', cierra el estado actual y registra el cambio.
+        """
+        # 1. Buscar el cambio de estado actual (el que está activo)
+        cambio_actual = None
+        for cambio in self.getCambiosEstado():
+            if cambio is not None and cambio.esEstadoActual():
+                cambio_actual = cambio
+                break
+
+        # 2. Cerrar el cambio de estado actual (ponerle fecha de fin)
+        if cambio_actual:
+            cambio_actual.setFechaHoraFin(fechaHoraActual)
+
+        # 3. Crear y agregar el nuevo cambio de estado (rechazado)
+        nuevo_cambio = CambioEstado(fechaHoraActual, estadoRechazado, usuario)
+        self.getCambiosEstado().append(nuevo_cambio)
+
+        # 4. Actualizar el estado actual del evento
+        self.setEstadoActual(estadoRechazado)
 
     def bloquearEvento(self, estadoBloqueado: Estado):
         # Validar que el estado sea el correcto
@@ -185,3 +243,25 @@ class EventoSismico:
             'longitudHipocentro': str(self.getLongitudHipocentro()) if self.getLongitudHipocentro() is not None else 'No disponible',
             'series_temporales': [serie.getDatos() for serie in self.getSerieTemporal()] if isinstance(self.getSerieTemporal(), list) else [self.getSerieTemporal().getDatos()]
         }
+    
+    def bloquear (estadoBloqueado: Estado, fechaHoraActual: datetime):
+        """
+        Bloquea un evento sísmico cambiando su estado actual y registrando el cambio
+        """
+
+        self.setEstadoActual(estadoBloqueado)
+        
+        cambio_actual = None
+        for cambio in self.getCambiosEstado():
+            if cambio is not None and cambio.esEstadoActual():
+                cambio_actual = cambio
+                break
+            
+        CambioEstado.setFechaHoraFin(cambio_actual, fechaHoraActual) 
+        # Asegurarse de que el cambio actual no tenga fecha de fin
+        
+        nuevo_cambio = CambioEstado(fechaHoraActual, estadoBloqueado)
+        self.getCambiosEstado().append(nuevo_cambio)
+
+
+

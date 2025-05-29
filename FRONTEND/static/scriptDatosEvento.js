@@ -19,16 +19,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
     // Botones de opciones
-    document.getElementById('btnMapa').addEventListener('click', function() {
-        alert('Funcionalidad de mapa: aquí se mostraría el evento y las estaciones en un mapa.');
-    });
+    const btnMapa = document.getElementById('btnMapa');
+    if (btnMapa) {
+        btnMapa.addEventListener('click', function() {
+            // tu código
+        });
+    }
 
-    document.getElementById('btnModificar').addEventListener('click', function() {
-        if (!confirm('¿Desea modificar los datos del evento?')) {
-            return;
-        }
-    });
-
+    
     document.getElementById('btnEjecutarAccion').addEventListener('click', function() {
         const accion = document.getElementById('accionEvento').value;
         if (!accion) {
@@ -43,13 +41,40 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                alert('Acción ejecutada con éxito');
-                window.location.href = '/index'; // Redirigir al índice después de la acción
+                alert(data.mensaje || 'Acción ejecutada con éxito');
+                window.location.href = '/'; // Redirigir al índice después de la acción
             } else {
                 alert(data.error || 'Error al ejecutar la acción');
             }
         });
     });
+se 
+    // Cargar alcances y origenes para los selects
+    fetch('/api/alcances')
+      .then(r => r.json())
+      .then(alcances => {
+        const selectAlcance = document.getElementById('selectAlcance');
+        selectAlcance.innerHTML = '<option value=\"\">Seleccione alcance...</option>';
+        alcances.forEach(a => {
+          const option = document.createElement('option');
+          option.value = a.nombre;
+          option.textContent = a.nombre + (a.descripcion ? ' - ' + a.descripcion : '');
+          selectAlcance.appendChild(option);
+        });
+      });
+
+    fetch('/api/origenes')
+      .then(r => r.json())
+      .then(origenes => {
+        const selectOrigen = document.getElementById('selectOrigen');
+        selectOrigen.innerHTML = '<option value=\"\">Seleccione origen...</option>';
+        origenes.forEach(o => {
+          const option = document.createElement('option');
+          option.value = o.nombre;
+          option.textContent = o.nombre + (o.descripcion ? ' - ' + o.descripcion : '');
+          selectOrigen.appendChild(option);
+        });
+      });
 });
 
 function llenarSelect(id, opciones, valorActual) {

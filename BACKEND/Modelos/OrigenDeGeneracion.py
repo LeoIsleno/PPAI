@@ -3,7 +3,6 @@ class OrigenDeGeneracion:
         self.__nombre = nombre
         self.__descripcion = descripcion
 
-
 # Nombre
     def getNombre(self):
         return self.__nombre

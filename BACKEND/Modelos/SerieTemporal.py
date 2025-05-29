@@ -10,18 +10,18 @@ class SerieTemporal:
         if muestraSismica is not None:
             self._muestraSismica.append(muestraSismica)
 
-    # Fecha Hora Inicio Registro Muestras
+    # Getters y setters
     def getFechaHoraInicioRegistroMuestras(self):
         return self._fechaHoraInicioRegistroMuestras
 
     def setFechaHoraInicioRegistroMuestras(self, value):
         self._fechaHoraInicioRegistroMuestras = value
 
-    # Fecha Hora Registro
     def getFechaHoraRegistro(self):
         return self._fechaHoraRegistro
 
     def setFechaHoraRegistro(self, value):
+        self._fechaHoraRegistro = value
         self._fechaHoraRegistro = value
 
     # Frecuencia Muestreo

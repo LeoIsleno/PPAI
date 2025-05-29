@@ -20,10 +20,8 @@ class DetalleMuestraSismica:
         self.__tipo_de_dato = tipo_de_dato
 
     def getDatos(self):
-        tipo_dato = self.getTipoDeDato()
-        denominacion = tipo_dato.getDenominacion() if tipo_dato else 'No disponible'
         return {
-            'valor': self.getValor(),
-            'tipoDeDato': denominacion
+            "tipoDeDato": self.getTipoDeDato().getDenominacion() if self.getTipoDeDato() else "No disponible",
+            "valor": self.getValor() if self.getValor() is not None else "No disponible"
         }
 

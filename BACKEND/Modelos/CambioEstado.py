@@ -4,7 +4,7 @@ from .Estado import Estado
 class CambioEstado:
     def __init__(self, fechaHoraDesde: datetime.datetime, estado: Estado, fechaHoraHasta: datetime.datetime = None):
         self.__fechaHoraDesde = fechaHoraDesde
-        self.__fechaHoraHasta = fechaHoraHasta
+        self.__fechaHoraFin = fechaHoraHasta
         self.__estado = estado
 
     # FechaHoraDesde
@@ -17,11 +17,11 @@ class CambioEstado:
 
     # FechaHoraHasta
     def getFechaHoraHasta(self):
-        return self.__fechaHoraHasta
+        return self.__fechaHoraFin
     
-    def setFechaHoraHasta(self, fechaHoraHasta):
+    def setFechaHoraFin(self, fechaHoraHasta):
         """Establece la fecha y hora de finalización del estado"""
-        self.__fechaHoraHasta = fechaHoraHasta
+        self.__fechaHoraFin = fechaHoraHasta
 
 
     # Estado
@@ -32,8 +32,10 @@ class CambioEstado:
         self.__estado = estado
         
 
-    # Método para saber si es el cambio de estado actual
+    # Método para saber si es el cambio de estado actual y devolver el objeto si lo es
     def esEstadoActual(self):
-        return self.__fechaHoraHasta is None
+        if self.__fechaHoraFin is None:
+            return self
+        return None
 
 

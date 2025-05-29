@@ -28,5 +28,5 @@ class Sesion:
     def setUsuario(self, usuario):
         self.__usuario = usuario
 
-    def obtenerUsuario(self):
-        return self.__usuario
+    def obtenerUsuario(self, usuario: Usuario):
+        return usuario.getUsuarioLogueado

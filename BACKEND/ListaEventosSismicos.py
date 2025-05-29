@@ -25,10 +25,10 @@ class ListarEventosSismicos:
     # Función principal para crear una lista de eventos sísmicos de ejempl
     def crear_eventos_sismicos():
         # Crear estados posibles para los eventos
-        estado_auto_detectado = Estado("Auto-detectado", "EventoSismico")
-        estado_normal = Estado("Normal", "EventoSismico")
-        estado_bloqueado = Estado("BloqueadoEnRevision", "EventoSismico")
-        estado_rechazado = Estado("Rechazado", "EventoSismico")
+        estado_auto_detectado = Estado("Auto-detectado")
+        estado_normal = Estado("Normal")
+        estado_bloqueado = Estado("BloqueadoEnRevision")
+        estado_rechazado = Estado("Rechazado")
 
         # Crear clasificaciones de profundidad
         clasificacion_superficial = ClasificacionSismo("Superficial", 0, 70)
@@ -141,10 +141,27 @@ class ListarEventosSismicos:
             eventos.append(evento)
 
         return eventos
-    
 
-        
+    @staticmethod
+    def obtener_alcances():
+        # Devuelve una lista de objetos AlcanceSismo
+        return [
+            AlcanceSismo("Afecta área local", "Local"),
+            AlcanceSismo("Afecta área regional", "Regional"),
+            AlcanceSismo("Afecta área nacional", "Nacional")
+        ]
 
-        
+    @staticmethod
+    def obtener_origenes():
+        # Devuelve una lista de objetos OrigenDeGeneracion
+        return [
+            OrigenDeGeneracion("Natural", "Sismo de origen tectónico natural"),
+            OrigenDeGeneracion("Artificial", "Sismo provocado por actividad humana")
+        ]
+
+
+
+
+
 
 
