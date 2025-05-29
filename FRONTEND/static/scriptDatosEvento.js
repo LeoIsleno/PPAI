@@ -48,32 +48,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-se 
-    // Cargar alcances y origenes para los selects
+    // Cambia 'selectAlcance' y 'selectOrigen' por 'inputAlcance' y 'inputOrigen' en la carga de selects
     fetch('/api/alcances')
       .then(r => r.json())
       .then(alcances => {
-        const selectAlcance = document.getElementById('selectAlcance');
-        selectAlcance.innerHTML = '<option value=\"\">Seleccione alcance...</option>';
+        window.ultimosAlcances = alcances.map(a => a.nombre); // Guarda para reutilizar
+        const selectAlcance = document.getElementById('inputAlcance');
+        selectAlcance.innerHTML = '<option value="">Seleccione alcance...</option>';
         alcances.forEach(a => {
           const option = document.createElement('option');
           option.value = a.nombre;
           option.textContent = a.nombre + (a.descripcion ? ' - ' + a.descripcion : '');
           selectAlcance.appendChild(option);
         });
+        // Selecciona el valor actual si ya está cargado el evento
+        if (window.eventoActual && window.eventoActual.alcanceSismo) {
+          selectAlcance.value = window.eventoActual.alcanceSismo;
+        }
       });
 
     fetch('/api/origenes')
       .then(r => r.json())
       .then(origenes => {
-        const selectOrigen = document.getElementById('selectOrigen');
-        selectOrigen.innerHTML = '<option value=\"\">Seleccione origen...</option>';
+        window.ultimosOrigenes = origenes.map(o => o.nombre); // Guarda para reutilizar
+        const selectOrigen = document.getElementById('inputOrigen');
+        selectOrigen.innerHTML = '<option value="">Seleccione origen...</option>';
         origenes.forEach(o => {
           const option = document.createElement('option');
           option.value = o.nombre;
           option.textContent = o.nombre + (o.descripcion ? ' - ' + o.descripcion : '');
           selectOrigen.appendChild(option);
         });
+        // Selecciona el valor actual si ya está cargado el evento
+        if (window.eventoActual && window.eventoActual.origenGeneracion) {
+          selectOrigen.value = window.eventoActual.origenGeneracion;
+        }
       });
 });
 

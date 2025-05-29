@@ -16,6 +16,9 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)  # Par
 eventos_cache = None
 gestor =  GestorRevisionManual()
 
+# Lista persistente de eventos (en memoria)
+eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos()
+
 # Ruta para la página principal
 @app.route('/')
 def inicio():
@@ -23,17 +26,12 @@ def inicio():
 
 @app.route('/registrarRevision')
 def retornarDatos():
-    eventos = ListarEventosSismicos.crear_eventos_sismicos()
-   
-    result = gestor.buscarEventosAutoDetectados(eventos)
-    otro = [] # camino alternativo 1
-    
+    # Usar la lista persistente y filtrar solo los auto-detectados
+    result = gestor.buscarEventosAutoDetectados(eventos_persistentes)
     return render_template('registrar.html', eventos=result)
-    
-    
+
 @app.route('/eventos', methods=['POST'])
 def seleccionar_evento():
-    global eventos_cache
     data = request.get_json()
     magnitud = data.get('magnitud')
     lat_epicentro = data.get('latEpicentro')
@@ -41,11 +39,9 @@ def seleccionar_evento():
     lat_hipocentro = data.get('latHipocentro')
     long_hipocentro = data.get('longHipocentro')
 
-    if eventos_cache is None:
-        eventos_cache = ListarEventosSismicos.crear_eventos_sismicos()
-
+    # Buscar en la lista persistente
     evento_seleccionado = next(
-        (evento for evento in eventos_cache
+        (evento for evento in eventos_persistentes
          if float(evento.getValorMagnitud()) == float(magnitud)
          and float(evento.getLatitudEpicentro()) == float(lat_epicentro)
          and float(evento.getLongitudEpicentro()) == float(long_epicentro)
@@ -57,25 +53,21 @@ def seleccionar_evento():
 
     gestor.tomarSeleccionDeEvento(evento_seleccionado)
 
-    # RESPUESTA CORRECTA PARA EL FRONTEND:
     if evento_seleccionado:
         return jsonify({'success': True, 'redirect': '/mostrar_datos_evento'})
     else:
         return jsonify({'success': False, 'error': 'Evento no encontrado'}), 404
-    
 
 @app.route('/mostrar_datos_evento')
 def mostrar_datos_evento():
     return render_template('datos_evento.html')
-    
 
 @app.route('/api/eventos', methods=['GET'])
 def api_eventos():
-    eventos = ListarEventosSismicos.crear_eventos_sismicos()
-    result = gestor.buscarEventosAutoDetectados(eventos)
-    # result es una lista de arrays, conviértelo a lista de listas si es necesario
+    # Usar la lista persistente
+    result = gestor.buscarEventosAutoDetectados(eventos_persistentes)
     return jsonify(result)
-    
+
 @app.route('/obtener_datos_evento')
 def obtener_datos_evento():
     evento = gestor._GestorRevisionManual__eventoSismicoSeleccionado
@@ -98,7 +90,7 @@ def obtener_datos_evento():
         'alcances_sismo': alcances_sismo,
         'origenes_generacion': origenes_generacion
     })
-    
+
 @app.route('/api/alcances', methods=['GET'])
 def api_alcances():
     alcances = ListarEventosSismicos.obtener_alcances()
@@ -139,22 +131,24 @@ def ejecutar_accion():
         return jsonify({'success': False, 'error': 'No hay evento seleccionado'}), 404
 
     data = request.get_json()
-    accion = data.get('accion')  # Recupera la opción elegida
+    accion = data.get('accion')
 
-    # Ejecutar acción según la opción elegida
     if accion == 'rechazar':
         global usuario
-        estado_rechazado = gestor.obtenerEstadoRechazado()  # Obtener el estado rechazado
-        usuario_actual = usuario  # Usa la variable global usuario
-        usuario_obj = gestor.buscarASLogueado(usuario_actual)  # Pasar el usuario global
-        gestor.validarDatosMinimosRequeridos(evento)  # Validar datos mínimos
+        estado_rechazado = gestor.obtenerEstadoRechazado()
+        usuario_actual = usuario
+        usuario_obj = gestor.buscarASLogueado(usuario_actual)
+        gestor.validarDatosMinimosRequeridos(evento)
         gestor.rechazarEventoSismico(evento, usuario_obj, estado_rechazado)
+        # El evento ya está en la lista persistente, solo cambia su estado
         return jsonify({'success': True, 'mensaje': 'Evento rechazado correctamente'})
     elif accion == 'confirmar':
         # Lógica para confirmar el evento
+        # Aquí podrías actualizar el estado del evento en eventos_persistentes si es necesario
         return jsonify({'success': True, 'mensaje': 'Evento confirmado correctamente'})
     elif accion == 'experto':
         # Lógica para solicitar revisión a experto
+        # Aquí podrías actualizar el estado del evento en eventos_persistentes si es necesario
         return jsonify({'success': True, 'mensaje': 'Revisión a experto solicitada'})
     else:
         return jsonify({'success': False, 'error': 'Acción no válida'}), 400
