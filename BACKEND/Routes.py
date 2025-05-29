@@ -1,7 +1,11 @@
 from flask import Flask, render_template, url_for, jsonify, request, session
 from flask_cors import CORS, cross_origin
-from BACKEND.ListaEventosSismicos import ListarEventosSismicos
-from BACKEND.GestorRevisionManual import GestorRevisionManual
+from ListaEventosSismicos import ListarEventosSismicos
+from GestorRevisionManual import GestorRevisionManual
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 app = Flask(__name__, template_folder='FRONTEND/')
 
@@ -17,8 +21,8 @@ def retornarDatos():
     eventos = ListarEventosSismicos.crear_eventos_sismicos()
     gestor =  GestorRevisionManual()
     result = gestor.buscarEventosAutoDetectados(eventos)
-    print(f"Eventos auto-detectados: {result}")
-    return jsonify('hola')
+    otro = [] # camino alternativo 1
+    return result
     
 
 

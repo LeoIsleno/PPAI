@@ -1,4 +1,4 @@
-import {PantallaRevisionManual} from './Pantalla.js';
+import {PantallaRevisionManual} from './PantallaRevisionManual.js';
 
 const pantalla = new PantallaRevisionManual();
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from .SerieTemporal import SerieTemporal
-from .estado import Estado
+from .Estado import Estado
 from .ClasificacionSismo import ClasificacionSismo
 from .OrigenDeGeneracion import OrigenDeGeneracion
 from .AlcanceSismo import AlcanceSismo
@@ -128,16 +128,12 @@ class EventoSismico:
         return self._estadoActual.esAutoDetectado()
 
     def mostrarDatosEventoSismico(self):
-        return (
-            f"--- Evento Sísmico ---\n"
-            f"Fecha y Hora: {self.getFechaHoraOcurrencia().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"Latitud Epicentro: {self.getLatitudEpicentro()}\n"
-            f"Longitud Epicentro: {self.getLongitudEpicentro()}\n"
-            f"Latitud Hipocentro: {self.getLatitudHipocentro()}\n"
-            f"Longitud Hipocentro: {self.getLongitudHipocentro()}\n"
-            f"Magnitud: {self.getValorMagnitud()}\n"
-            f"----------------------"
-        )
+        return [self.getFechaHoraOcurrencia().strftime('%Y-%m-%d %H:%M:%S'),
+                self.getLatitudEpicentro(),
+                self.getLongitudEpicentro(),
+                self.getLatitudHipocentro(),
+                self.getLongitudHipocentro(),
+                self.getValorMagnitud()]
 
     def bloquear(self):
         estado_bloqueado = Estado("BloqueadoEnRevision", "EventoSismico")

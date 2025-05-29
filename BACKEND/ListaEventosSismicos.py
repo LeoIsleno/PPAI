@@ -1,19 +1,18 @@
 # ListaEventosSismicos.py - Generador de eventos sísmicos de ejemplo para la aplicación
 # Este archivo crea una lista de eventos sísmicos con datos realistas y estructura anidada.
 
-from BACKEND.Modelos.EventoSismico import EventoSismico
-from Modelos.estado import Estado
-from BACKEND.Modelos.ClasificacionSismo import ClasificacionSismo
-from BACKEND.Modelos.OrigenDeGeneracion import OrigenDeGeneracion
-from BACKEND.Modelos.AlcanceSismo import AlcanceSismo
-from BACKEND.Modelos.SerieTemporal import SerieTemporal
-from BACKEND.Modelos.MuestraSismica import MuestraSismica
-from Modelos.detalle_muestra_sismica import DetalleMuestraSismica
-from BACKEND.Modelos.TipoDeDato import TipoDeDato
-from BACKEND.Modelos.CambioEstado import CambioEstado
+from Modelos.EventoSismico import EventoSismico
+from Modelos.Estado import Estado
+from Modelos.ClasificacionSismo import ClasificacionSismo
+from Modelos.OrigenDeGeneracion import OrigenDeGeneracion
+from Modelos.AlcanceSismo import AlcanceSismo
+from Modelos.SerieTemporal import SerieTemporal
+from Modelos.MuestraSismica import MuestraSismica
+from Modelos.DetalleMuestraSismica import DetalleMuestraSismica
+from Modelos.TipoDeDato import TipoDeDato
+from Modelos.CambioEstado import CambioEstado
 from datetime import datetime, timedelta
 from random import randint, choice
-from flask import jsonify
 
 
 class ListarEventosSismicos:

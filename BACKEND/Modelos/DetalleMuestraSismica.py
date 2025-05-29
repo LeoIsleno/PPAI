@@ -1,4 +1,4 @@
-from BACKEND.Modelos.TipoDeDato import TipoDeDato
+from .TipoDeDato import TipoDeDato
 
 class DetalleMuestraSismica:
     def __init__(self, valor, tipo_de_dato: TipoDeDato):

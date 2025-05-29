@@ -1,14 +1,14 @@
 from datetime import datetime
-from .Modelos import Estado
-from .Modelos.EventoSismico import EventoSismico
-from .Modelos.CambioEstado import CambioEstado
-from .Modelos.AlcanceSismo import AlcanceSismo
-from .Modelos.ClasificacionSismo import ClasificacionSismo
-from .Modelos.OrigenDeGeneracion import OrigenDeGeneracion
-from .Modelos import DetalleMuestraSismica
-from .Modelos.MuestraSismica import MuestraSismica
-from .Modelos.SerieTemporal import SerieTemporal
-from .Modelos.TipoDeDato import TipoDeDato
+from Modelos import Estado
+from Modelos.EventoSismico import EventoSismico
+from Modelos.CambioEstado import CambioEstado
+from Modelos.AlcanceSismo import AlcanceSismo
+from Modelos.ClasificacionSismo import ClasificacionSismo
+from Modelos.OrigenDeGeneracion import OrigenDeGeneracion
+from Modelos import DetalleMuestraSismica
+from Modelos.MuestraSismica import MuestraSismica
+from Modelos.SerieTemporal import SerieTemporal
+from Modelos.TipoDeDato import TipoDeDato
 
 class GestorRevisionManual:
     def __init__(self):
@@ -34,12 +34,10 @@ class GestorRevisionManual:
             if evento.estaAutoDetectado():
                 datosEvento = evento.mostrarDatosEventoSismico()
                 eventosAutodetectados.append(datosEvento)
-        
-        return eventosAutodetectados
-        #return self.ordenarESPorFechaOcurrencia(eventosAutodetectados)
+        return self.ordenarESPorFechaOcurrencia(eventosAutodetectados)
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
-        return sorted(eventos, key=lambda x: x.getFechaHoraOcurrencia())
+        return sorted(eventos, key=lambda x: x[0], reverse=True)
 
     def tomarSeleccionDeEvento(self, evento_id):
         # El evento ya viene seleccionado, solo guardarlo

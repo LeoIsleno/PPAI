@@ -1,4 +1,4 @@
-from Modelos.detalle_muestra_sismica import DetalleMuestraSismica
+from Modelos.DetalleMuestraSismica import DetalleMuestraSismica
 
 class MuestraSismica:
     def __init__(self, fechaHoraMuestra, detalleMuestraSismica:DetalleMuestraSismica):

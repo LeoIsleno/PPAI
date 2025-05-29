@@ -1,5 +1,5 @@
 import datetime
-from .estado import Estado
+from .Estado import Estado
 
 class CambioEstado:
     def __init__(self, fechaHoraDesde: datetime.datetime, estado: Estado, fechaHoraHasta: datetime.datetime = None):
