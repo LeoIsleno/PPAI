@@ -5,8 +5,9 @@ class PantallaRevisionManual {
     }
 
     async OpRegistrarResultadoRevisionManual() {
-        window.location.href = '/registrarRevision';
-    }
+        const newWindow = window.open('registrar.html', '_self');
+    };
+
 
     async mostrarEventosSismicos() {
         const select = document.getElementById('evento');
@@ -45,81 +46,28 @@ class PantallaRevisionManual {
     }
 
     tomarSeleccionEventoSismico() {
-        const valor = this.cboEventoSismicos.value;
-        if (!valor) {
-            alert('Debe seleccionar un evento');
-            return;
-        }
+        const valor = self.cboEventoSismicos.value;
         const evento = JSON.parse(valor);
 
-        const datos = {
-            magnitud: evento[5],
-            latEpicentro: evento[1],
-            longEpicentro: evento[2],
-            latHipocentro: evento[3],
-            longHipocentro: evento[4]
-        };
-
-        fetch('/eventos', {
+        // Usá 127.0.0.1 y pasá el nombre correcto del parámetro
+        fetch('http://localhost:5001/seleccionar_evento', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datos)
+            body: JSON.stringify({ evento })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.redirect) {
-                window.location.href = data.redirect;
-            } else {
-                alert(data.error || 'No se pudo seleccionar el evento');
-            }
-        })
-        .catch(error => {
-            console.error('Error al solicitar evento sísmico:', error);
-        });
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.redirect) {
+                    window.location.href = data.redirect;
+                    console.log("Redirigiendo a:", data.redirect);
+                } else {
+                    alert(data.error || 'Error al seleccionar el evento');
+                }
+            });
     }
-
-    mostrarDatosSismicos() {
-        datos_series = EventoSismico.obtenerSeriesTemporales();
-
-        datos_sismicoos = EventoSismico.obtenerDatosSismicos();
-
-        return jsonify({
-            'success': True,
-            'evento': datos_sismicoos,
-            'series_temporales': datos_series,
-            'alcances_sismo': alcances_sismo,
-            'origenes_generacion': origenes_generacion
-        })
-    }
-
-    tomarSeleccionOpcionEvento() {
-        const accion = document.getElementById('accionEvento').value;
-        if (!accion) {
-            alert('Por favor seleccione una acción');
-            return;
-        }
-
-        fetch('/ejecutar_accion', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accion })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.mensaje || 'Acción ejecutada con éxito');
-                window.location.href = '/'; // Redirigir al índice después de la acción
-            } else {
-                alert(data.error || 'Error al ejecutar la acción');
-            }
-        });
-    }
-
-
 
 
 }
-
 
 export { PantallaRevisionManual };
 
