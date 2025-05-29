@@ -6,8 +6,8 @@ class PantallaRevisionManual {
 
     async OpRegistrarResultadoRevisionManual() {
         const newWindow = window.open('registrar.html', '_self');
-    };  
-        
+    };
+
 
     async mostrarEventosSismicos() {
         const select = document.getElementById('evento');
@@ -46,9 +46,31 @@ class PantallaRevisionManual {
 
     tomarSeleccionEventoSismico() {
         const valor = self.cboEventoSismicos.value;
-        console.log("Valor seleccionado:", valor);
+        const evento = JSON.parse(valor);
+
+        // Usá 127.0.0.1 y pasá el nombre correcto del parámetro
+        fetch('http://localhost:5001/seleccionar_evento', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ evento })
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.redirect) {
+                    window.location.href = data.redirect;
+                    console.log("Redirigiendo a:", data.redirect);
+                } else {
+                    alert(data.error || 'Error al seleccionar el evento');
+                }
+            });
     }
+
+
 }
 
 export { PantallaRevisionManual };
+
+
+
+
 
