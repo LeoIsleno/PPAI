@@ -1,7 +1,9 @@
 from .MuestraSismica import MuestraSismica
+from .Estado import Estado
+from .CambioEstado import CambioEstado
 
 class SerieTemporal:
-    def __init__(self, fechaHoraInicioRegistroMuestras, fechaHoraRegistro, frecuenciaMuestreo, condicionAlarma, muestraSismica: MuestraSismica):
+    def __init__(self, fechaHoraInicioRegistroMuestras, fechaHoraRegistro, frecuenciaMuestreo, condicionAlarma, muestraSismica: MuestraSismica, estado: Estado = None, cambiosEstado=None):
         self._fechaHoraInicioRegistroMuestras = fechaHoraInicioRegistroMuestras
         self._fechaHoraRegistro = fechaHoraRegistro
         self._frecuenciaMuestreo = frecuenciaMuestreo
@@ -9,6 +11,8 @@ class SerieTemporal:
         self._muestraSismica = []
         if muestraSismica is not None:
             self._muestraSismica.append(muestraSismica)
+        self._estado = estado
+        self._cambiosEstado = cambiosEstado if cambiosEstado is not None else []
 
     # Getters y setters
     def getFechaHoraInicioRegistroMuestras(self):
@@ -48,11 +52,28 @@ class SerieTemporal:
     def agregarMuestraSismica(self, muestra: MuestraSismica):
         self._muestraSismica.append(muestra)
 
-    def getDatos(self):
+    # Estado
+    def getEstado(self):
+        return self._estado
+
+    def setEstado(self, estado):
+        self._estado = estado
+
+    def getCambiosEstado(self):
+        return self._cambiosEstado
+
+    def setCambiosEstado(self, cambios):
+        self._cambiosEstado = cambios
+
+    def agregarCambioEstado(self, cambio: CambioEstado):
+        self._cambiosEstado.append(cambio)
+
+    def getDatos(self, sismografos):
         return {
-            'fechaHoraInicioRegistroMuestras': str(self.getFechaHoraInicioRegistroMuestras()) if self.getFechaHoraInicioRegistroMuestras() else 'No disponible',
-            'fechaHoraRegistro': str(self.getFechaHoraRegistro()) if self.getFechaHoraRegistro() else 'No disponible',
-            'frecuenciaMuestreo': self.getFrecuenciaMuestreo() if self.getFrecuenciaMuestreo() is not None else 'No disponible',
-            'condicionAlarma': self.getCondicionAlarma() if self.getCondicionAlarma() is not None else 'No disponible',
-            'muestras': [muestra.getDatos() for muestra in self.getMuestraSismica()]
+            'fechaHoraInicioRegistroMuestras': str(self._fechaHoraInicioRegistroMuestras) if self._fechaHoraInicioRegistroMuestras else 'No disponible',
+            'fechaHoraRegistro': str(self._fechaHoraRegistro) if self._fechaHoraRegistro else 'No disponible',
+            'frecuenciaMuestreo': self._frecuenciaMuestreo if self._frecuenciaMuestreo is not None else 'No disponible',
+            'condicionAlarma': self._condicionAlarma if self._condicionAlarma is not None else 'No disponible',
+            'muestras': [muestra.getDatos() for muestra in self._muestraSismica],
+            'codigoEstacion': [sismografo.sosDeSerieTemporal(self) for sismografo in sismografos]
         }

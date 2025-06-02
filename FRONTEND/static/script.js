@@ -8,8 +8,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 btnRegistrar.addEventListener('click', function () {
    pantalla.solicitarEventoSismico();
-   pantalla.tomarSeleccionEventoSismico();
-})
+   pantalla.tomarSeleccionDeEventoSismico();
+});
 
 
 

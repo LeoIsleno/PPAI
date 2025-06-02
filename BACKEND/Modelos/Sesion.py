@@ -1,4 +1,4 @@
-from .usuario import Usuario
+from .Usuario import Usuario
 
 class Sesion:
     def __init__(self, fechaHoraDesde, fechaHoraHasta, usuario: Usuario):
@@ -29,4 +29,4 @@ class Sesion:
         self.__usuario = usuario
 
     def obtenerUsuario(self, usuario: Usuario):
-        return usuario.getUsuarioLogueado
+        return self.__usuario.getUsuarioLogueado()

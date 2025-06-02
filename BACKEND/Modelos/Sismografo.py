@@ -1,13 +1,17 @@
-from BACKEND.Modelos.EstacionSismologica import EstacionSismologica
-from BACKEND.Modelos.SerieTemporal import SerieTemporal
+from .EstacionSismologica import EstacionSismologica
+from .SerieTemporal import SerieTemporal
+from .Estado import Estado
+from .CambioEstado import CambioEstado
 
 class Sismografo:
-    def __init__(self, identificadorSismografo, nroSerie, fechaAdquisicion, estacionSismologica: EstacionSismologica, serieTemporal=None):
+    def __init__(self, identificadorSismografo, nroSerie, fechaAdquisicion, estacionSismologica: EstacionSismologica, serieTemporal: SerieTemporal, estado: Estado = None, cambiosEstado=None):
         self.__identificadorSismografo = identificadorSismografo
         self.__nroSerie = nroSerie
         self.__fechaAdquisicion = fechaAdquisicion
         self.__estacionSismologica = estacionSismologica
         self.__serieTemporal = serieTemporal if serieTemporal is not None else []
+        self.__estado = estado
+        self.__cambiosEstado = cambiosEstado if cambiosEstado is not None else []
 
     # IdentificadorSismografo
     def getIdentificadorSismografo(self):
@@ -46,4 +50,21 @@ class Sismografo:
 
     # Método para agregar una serie temporal
     def sosDeSerieTemporal(self, serieTemporal):
-        self.__serieTemporal.append(serieTemporal)
+        if serieTemporal == self.__serieTemporal:
+            return self.__estacionSismologica.getCodigoEstacion() #TODO: PUEDE QUE TAMBIEN SE TENGA QUE DEVOLVER DATOS DEL SISMOGRAFO
+        return None
+
+    def getEstado(self):
+        return self.__estado
+
+    def setEstado(self, estado):
+        self.__estado = estado
+
+    def getCambiosEstado(self):
+        return self.__cambiosEstado
+
+    def setCambiosEstado(self, cambios):
+        self.__cambiosEstado = cambios
+
+    def agregarCambioEstado(self, cambio: CambioEstado):
+        self.__cambiosEstado.append(cambio)

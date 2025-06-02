@@ -1,11 +1,14 @@
+const API_BASE = 'http://127.0.0.1:5001';
+
 class PantallaRevisionManual {
 
-    constructor(cboEventoSismicos) {
+    constructor(cboEventoSismicos, btnAccion) {
         this.cboEventoSismicos = cboEventoSismicos;
+        this.btnAccion = btnAccion;
     }
 
-    async OpRegistrarResultadoRevisionManual() {
-        window.open('registrar.html', '_self');
+    async opRegistrarResultadoRevisionManual() {
+        window.location.href = 'registrar.html';
     }
 
     async mostrarEventosSismicos() {
@@ -13,10 +16,15 @@ class PantallaRevisionManual {
         const mensaje = document.getElementById('mensajeEventos');
 
         try {
-            const response = await fetch('http://127.0.0.1:5001/api/eventos');
+            const response = await fetch(`${API_BASE}/api/eventos`);
             const eventos = await response.json();
 
-            select.innerHTML = `<option value="" disabled selected>Seleccione un evento sísmico...</option>`;
+            select.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.selected = true;
+            defaultOption.textContent = 'Seleccione un evento sísmico...';
+            select.appendChild(defaultOption);
 
             if (eventos.length === 0) {
                 mensaje.textContent = 'No hay eventos sísmicos disponibles.';
@@ -31,20 +39,48 @@ class PantallaRevisionManual {
                     select.appendChild(option);
                 });
             }
-            // Guarda la referencia al select en la instancia
-            this.cboEventoSismicos = select;
+        // if (!valor) return;
+        // const evento = JSON.parse(valor);
+
+        // const datos = {
+        //     magnitud: evento[5],
+        //     latEpicentro: evento[1],
+        //     longEpicentro: evento[2],
+        //     latHipocentro: evento[3],
+        //     longHipocentro: evento[4]
+        // };
+
+        // fetch(`${API_BASE}/eventos`, {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify(datos)
+        // })
+        // .then(response => response.json())
+        // .then(data => {
+        //     if (data.success) {
+        //         fetch(`${API_BASE}/obtener_datos_evento`)
+        //             .then(response => response.json())
+        //             .then(data => {
+        //                 if (data.success) {
+        //                     // Aquí puedes manejar los datos recibidos si es necesario
+        //                 }
+        //             });
+        //     }
+        // });
         } catch (error) {
             mensaje.textContent = 'Error al cargar los eventos sísmicos.';
             mensaje.classList.remove('d-none');
         }
     }
 
+
     solicitarEventoSismico() {
         const evento = document.getElementById("evento");
         this.cboEventoSismicos = evento;
     }
 
-    async tomarSeleccionEventoSismico() {
+    
+    tomarSeleccionDeEventoSismico() {
         const valor = this.cboEventoSismicos.value;
         if (!valor) {
             alert('Debe seleccionar un evento');
@@ -60,42 +96,148 @@ class PantallaRevisionManual {
             longHipocentro: evento[4]
         };
 
-        await fetch('http://127.0.0.1:5001/eventos', {
+        console.log('[DEBUG] Enviando datos al backend:', datos);
+
+        fetch(`${API_BASE}/eventos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)
         })
-
-        window.open('datos_evento.html', '_self');
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                sessionStorage.setItem('eventoSeleccionado', JSON.stringify(data.evento));
+                sessionStorage.setItem('seriesTemporales', JSON.stringify(data.series_temporales || []));
+                sessionStorage.setItem('ultimosAlcances', JSON.stringify(data.alcances_sismo || []));
+                sessionStorage.setItem('ultimosOrigenes', JSON.stringify(data.origenes_generacion || []));
+                window.location.href = 'datos_evento.html'; // Redirigir a la página de datos del evento
+            } else {
+                alert(data.error || 'No se pudo seleccionar el evento');
+                console.warn('[WARN] No se pudo seleccionar el evento:', data);
+            }
+        });
     }
 
-    mostrarDatosSismicos() {
-        datos_series = EventoSismico.obtenerSeriesTemporales();
+    mostrarDatosSismicos(evento, seriesTemporales, alcance, origenSismico) {
+        window.eventoActual = evento;
+        window.seriesTemporalesActuales = seriesTemporales;
+        const datosPrincipales = document.getElementById('datosPrincipales');
+        if (!evento) {
+            mostrarError('No se pudieron cargar los datos del evento');
+            return;
+        }
+        datosPrincipales.innerHTML = `
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Información del Evento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Clasificación y Alcance</h6>
+                            <p><strong>Clasificación:</strong> ${evento.clasificacion || 'No disponible'}</p>
+                            <p><strong>Alcance:</strong> ${evento.alcanceSismo || 'No disponible'}</p>
+                            <p><strong>Descripción:</strong> ${evento.descripcionAlcance || 'No disponible'}</p>
+                            <p><strong>Origen:</strong> ${evento.origenGeneracion || 'No disponible'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Datos Técnicos</h6>
+                            <p><strong>Magnitud:</strong> ${evento.valorMagnitud || 'No disponible'}</p>
+                            <p><strong>Fecha/Hora:</strong> ${evento.fechaHoraOcurrencia || 'No disponible'}</p>
+                            <p><strong>Epicentro:</strong> (${evento.latitudEpicentro || '?'}, ${evento.longitudEpicentro || '?'})</p>
+                            <p><strong>Hipocentro:</strong> (${evento.latitudHipocentro || '?'}, ${evento.longitudHipocentro || '?'})</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        // Llenar los inputs del formulario de modificación
+        document.getElementById('inputMagnitud').value = evento.valorMagnitud || '';
+        // Llenar selects de alcance y origen con el valor actual
+        if (alcance && origenSismico) {
+            window.ultimosAlcances = alcance;
+            window.ultimosOrigenes = origenSismico;
+            const select = document.getElementById('inputAlcance');
+            if (!select) return;
+            select.innerHTML = '';
+            window.ultimosAlcances.forEach(op => {
+                const opt = document.createElement('option');
+                opt.value = op;
+                opt.textContent = op;
+                if (op === evento.alcanceSismo) opt.selected = true;
+                select.appendChild(opt);
+            });
 
-        datos_sismicoos = EventoSismico.obtenerDatosSismicos();
+            const origen = document.getElementById('inputOrigen');
+            if (!origen) return;
+            origen.innerHTML = '';
+            window.ultimosOrigenes.forEach(op => {
+                const opt = document.createElement('option');
+                opt.value = op;
+                opt.textContent = op;
+                if (op === evento.origenGeneracion) opt.selected = true;
+                origen.appendChild(opt);
+            });
+        }
 
-        return jsonify({
-            'success': True,
-            'evento': datos_sismicoos,
-            'series_temporales': datos_series,
-            'alcances_sismo': alcances_sismo,
-            'origenes_generacion': origenes_generacion
-        })
+        // Mostrar series temporales y muestras
+        const contenedor = document.getElementById('seriesTemporales');
+        if (!seriesTemporales || seriesTemporales.length === 0) {
+            contenedor.innerHTML = '<div class="alert alert-info">No hay series temporales registradas.</div>';
+            return;
+        }
+        let html = '';
+        seriesTemporales.forEach((serie, idx) => {
+            html += `<div class="card mb-2">
+                <div class="card-header bg-light">
+                    <strong>Serie temporal #${idx + 1}</strong><br>
+                    <span><b>Fecha/Hora inicio:</b> ${serie.fechaHoraInicioRegistroMuestras}</span><br>
+                    <span><b>Frecuencia de muestreo:</b> ${serie.frecuenciaMuestreo} Hz</span><br>
+                    <span><b>Alerta de alarma:</b> ${serie.condicionAlarma}</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-2">Muestras sísmicas:</h6>
+                    <ul class="list-group">`;
+            serie.muestras.forEach((muestra, j) => {
+                html += `<li class="list-group-item">
+                    <b>Fecha/Hora muestra ${j + 1}:</b> ${muestra.fechaHoraMuestra}<br>
+                    <ul style="margin-left: 1em;">`;
+                muestra.detalle.forEach(det => {
+                    html += `
+                        <li style="font-style:italic;">
+                            ${det.tipoDeDato === 'Velocidad de onda' ? '<b>Velocidad de onda:</b>' : ''}
+                            ${det.tipoDeDato === 'Frecuencia de onda' ? '<b>Frecuencia de onda:</b>' : ''}
+                            ${det.tipoDeDato === 'Longitud' ? '<b>Longitud:</b>' : ''}
+                            ${det.valor}
+                        </li>
+                    `;
+                });
+                html += `
+                    </ul>
+                </li>`;
+            });
+            html += `</ul></div></div>`;
+        });
+        contenedor.innerHTML = html;
+    }
+
+    pedirOpcionEveneto() {
+        const accion = document.getElementById('accionEvento')
+        this.btnAccion = accion;
     }
 
     tomarSeleccionOpcionEvento() {
-        const accion = document.getElementById('accionEvento').value;
+        const accion = this.btnAccion.value;
         if (!accion) {
             alert('Por favor seleccione una acción');
             return;
         }
-
-        fetch('http://127.0.0.1:5001/ejecutar_accion', {
+        fetch(`${API_BASE}/ejecutar_accion`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ accion })
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
                 alert(data.mensaje || 'Acción ejecutada con éxito');
@@ -105,12 +247,7 @@ class PantallaRevisionManual {
             }
         });
     }
-
-
-
-
 }
-
 
 export { PantallaRevisionManual };
 

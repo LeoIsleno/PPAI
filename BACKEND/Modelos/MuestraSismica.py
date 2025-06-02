@@ -20,9 +20,10 @@ class MuestraSismica:
 
     def getDatos(self):
         detalles = []
-        for d in self.getDetalleMuestraSismica():
+        print('-=-------------------------------detalles', self.__detalleMuestraSismica)
+        for d in self.__detalleMuestraSismica:
             detalles.append(d.getDatos())  # <--- Cambia esto
         return {
-            'fechaHoraMuestra': str(self.getFechaHoraMuestra()) if self.getFechaHoraMuestra() else 'No disponible',
+            'fechaHoraMuestra': str(self.__fechaHoraMuestra) if self.__fechaHoraMuestra else 'No disponible',
             'detalle': detalles
         }

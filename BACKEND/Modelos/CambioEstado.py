@@ -2,27 +2,25 @@ import datetime
 from .Estado import Estado
 
 class CambioEstado:
-    def __init__(self, fechaHoraDesde: datetime.datetime, estado: Estado, fechaHoraHasta: datetime.datetime = None):
-        self.__fechaHoraDesde = fechaHoraDesde
-        self.__fechaHoraFin = fechaHoraHasta
+    def __init__(self, fechaHoraInicio: datetime.datetime, estado: Estado, usuario=None, fechaHoraFin: datetime.datetime = None):
+        self.__fechaHoraInicio = fechaHoraInicio  # Antes: fechaHoraDesde
+        self.__fechaHoraFin = fechaHoraFin        # Antes: fechaHoraHasta
         self.__estado = estado
+        self.__usuario = usuario  # Si quieres guardar el usuario que hizo el cambio
 
-    # FechaHoraDesde
-    def getFechaHoraDesde(self):
-        return self.__fechaHoraDesde
-    
-    def setFechaHoraDesde(self, fechaHoraDesde):
-        self.__fechaHoraDesde = fechaHoraDesde
+    # FechaHoraInicio
+    def getFechaHoraInicio(self):
+        return self.__fechaHoraInicio
 
+    def setFechaHoraInicio(self, fechaHoraInicio):
+        self.__fechaHoraInicio = fechaHoraInicio
 
-    # FechaHoraHasta
-    def getFechaHoraHasta(self):
+    # FechaHoraFin
+    def getFechaHoraFin(self):
         return self.__fechaHoraFin
-    
-    def setFechaHoraFin(self, fechaHoraHasta):
-        """Establece la fecha y hora de finalización del estado"""
-        self.__fechaHoraFin = fechaHoraHasta
 
+    def setFechaHoraFin(self, fechaHoraFin):
+        self.__fechaHoraFin = fechaHoraFin
 
     # Estado
     def getEstado(self):
@@ -30,12 +28,16 @@ class CambioEstado:
 
     def setEstado(self, estado):
         self.__estado = estado
-        
 
-    # Método para saber si es el cambio de estado actual y devolver el objeto si lo es
+    # Usuario (opcional)
+    def getUsuario(self):
+        return self.__usuario
+
+    def setUsuario(self, usuario):
+        self.__usuario = usuario
+
+    # Saber si es el cambio de estado actual
     def esEstadoActual(self):
-        if self.__fechaHoraFin is None:
-            return self
-        return None
+        return self.__fechaHoraFin is None
 
 

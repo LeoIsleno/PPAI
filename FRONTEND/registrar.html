@@ -58,36 +58,8 @@
                                 <option value="" disabled selected>
                                     Seleccione un evento sísmico...
                                 </option>
-                                {% for evento in eventos %}
-                                    <option value='{{ evento | tojson | escape }}'>
-                                        {{ evento.fechaHoraOcurrencia }} |
-                                        Magnitud: {{ evento.valorMagnitud }} |
-                                        Epicentro: ({{ evento.latitudEpicentro }}, {{ evento.longitudEpicentro }}) |
-                                        Hipocentro: ({{ evento.latitudHipocentro }}, {{ evento.longitudHipocentro }})
-                                    </option>
-                                {% endfor %}
                             </select>
 
-                            <!-- Agregar sección para mostrar detalles -->
-                            <div id="detallesEvento" class="mt-4 d-none">
-                                <div class="card">
-                                    <div class="card-header bg-info text-white">
-                                        <h5 class="mb-0">Detalles del Evento</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <p><strong>Fecha/Hora:</strong> <span id="fechaHora"></span></p>
-                                                <p><strong>Magnitud:</strong> <span id="magnitud"></span></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <p><strong>Epicentro:</strong> <span id="epicentro"></span></p>
-                                                <p><strong>Hipocentro:</strong> <span id="hipocentro"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             <!-- Área para mensajes -->
                             <div id="mensajeEventos" class="alert alert-info d-none"></div>
                         </div>

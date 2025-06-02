@@ -20,15 +20,18 @@ class ListarEventosSismicos:
         # Llamar a la función para crear los eventos sísmicos
         self.evento = self.crear_eventos_sismicos()
 
-
-
-    # Función principal para crear una lista de eventos sísmicos de ejempl
+    # Función principal para crear una lista de eventos sísmicos de ejemplo
+    @staticmethod
     def crear_eventos_sismicos():
         # Crear estados posibles para los eventos
-        estado_auto_detectado = Estado("Auto-detectado")
-        estado_normal = Estado("Normal")
-        estado_bloqueado = Estado("BloqueadoEnRevision")
-        estado_rechazado = Estado("Rechazado")
+        estado_auto_detectado = Estado("Auto-detectado", "EventoSismico")
+        estado_normal = Estado("Normal", "EventoSismico")
+        estado_bloqueado = Estado("BloqueadoEnRevision", "EventoSismico")
+        estado_rechazado = Estado("Rechazado", "EventoSismico")
+
+        # Crear estados para series temporales (si corresponde)
+        estado_serie_activa = Estado("Activa", "SerieTemporal")
+        estado_serie_inactiva = Estado("Inactiva", "SerieTemporal")
 
         # Crear clasificaciones de profundidad
         clasificacion_superficial = ClasificacionSismo("Superficial", 0, 70)
@@ -103,13 +106,22 @@ class ListarEventosSismicos:
                     # Fecha de la muestra (espaciada 5 minutos entre cada una)
                     muestra_fecha = base_fecha.replace(minute=5 + m*5)
                     muestras.append(MuestraSismica(muestra_fecha, detalles))
-                # Crear la serie temporal con sus muestras
+                # Cambios de estado para la serie temporal
+                cambios_estado_serie = [
+                    CambioEstado(
+                        base_fecha,
+                        estado_serie_activa
+                    )
+                ]
+                # Crear la serie temporal con sus muestras, estado y cambios de estado
                 serie_temporal = SerieTemporal(
                     base_fecha,
                     base_fecha,
                     50 + 10*s,  # frecuencia de muestreo
                     bool(s % 2),
-                    muestras[0]
+                    muestras[0],
+                    estado_serie_activa,
+                    cambios_estado_serie
                 )
                 for muestra in muestras[1:]:
                     serie_temporal.agregarMuestraSismica(muestra)

@@ -9,6 +9,7 @@ from Modelos import DetalleMuestraSismica
 from Modelos.MuestraSismica import MuestraSismica
 from Modelos.SerieTemporal import SerieTemporal
 from Modelos.TipoDeDato import TipoDeDato
+from Modelos.Sismografo import Sismografo
 from flask import jsonify, url_for
 
 class GestorRevisionManual:
@@ -16,7 +17,6 @@ class GestorRevisionManual:
         self.__eventosAutoDetectados = []
         self.__eventoSismicoSeleccionado = None
         self.__estadoBloqueadoEnRevision = None
-        self.__fechaHoraActual = datetime.now()
         self.__datosSismicos = None
         self.__seriesTemporales = []
         self.__opcionMapaSeleccionada = None
@@ -24,7 +24,12 @@ class GestorRevisionManual:
         self.__opcionEventoSeleccionada = None
         self.__estadoRechazado = None
         self.__analistaEnSismosLogueado = None
+        self.__ultimo_cambio = None
 
+
+    def opRegistrarResultadoRevisionManual(self, eventos):
+        eventosAutoDet = self.buscarEventosAutoDetectados(eventos)
+        return self.ordenarESPorFechaOcurrencia(eventosAutoDet)
 
     def agregarEventoAutoDetectado(self, evento: EventoSismico):
         self.__eventosAutoDetectados.append(evento)
@@ -35,39 +40,27 @@ class GestorRevisionManual:
             if evento.estaAutoDetectado():
                 datosEvento = evento.mostrarDatosEventoSismico()
                 eventosAutodetectados.append(datosEvento)
-        return self.ordenarESPorFechaOcurrencia(eventosAutodetectados)
+        return eventosAutodetectados
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
         return sorted(eventos, key=lambda x: x[0], reverse=True)
 
-    def tomarSeleccionDeEvento(self, evento_id):
-        # El evento ya viene seleccionado, solo guardarlo
-        if evento_id:
-            self.__eventoSismicoSeleccionado = evento_id
-            return True
-        return False
-
     def buscarEstadoBloqueadoEnRevision(self):
-        # 1. Crear una nueva instancia del estado bloqueado
-        estado = Estado("BloqueadoEnRevision")
-        
-        # 2. Validar que el estado sea del ámbito correcto y tenga el tipo correcto
-        if estado.esBloqueadoEnRevision():
-            return estado
+        for estado in Estado.estados_creados:
+            if estado.esAmbitoEventoSismico() and estado.esBloqueadoEnRevision():
+                return estado
         return None
 
     def obtenerFechaHoraActual(self):
-        return self.__fechaHoraActual
+        return datetime.now()
 
-    def bloquearEventoSismico(self, evento: EventoSismico, estadoBloqueado: Estado):
+    def bloquearEventoSismico(self, evento: EventoSismico, estado_bloqueado: Estado, facha_hora: datetime, usuario):
         """
         Bloquea un evento sísmico cambiando su estado actual y registrando el cambio
         """
-        evento.bloquear(estadoBloqueado, self.__fechaHoraActual)  # Cambia el estado del evento a bloqueado con la fecha y hora actual
-        
-
-    def buscarDatosSismicos(self, evento):
-        datos = evento.obtenerDatosSismicos(evento)  # Llama al método que obtiene los datos sísmicos del evento
+        self.__ultimo_cambio = evento.bloquear(estado_bloqueado, facha_hora, usuario)  # Cambia el estado del evento a bloqueado con la fecha y hora actual
+        return True 
+    
        
 
     def buscarSeriesTemporales(self, evento: EventoSismico):
@@ -105,33 +98,59 @@ class GestorRevisionManual:
         
 
     def obtenerEstadoRechazado(self):
-        # 1. Crear una nueva instancia del estado rechazado
-        estado = Estado("Rechazado")
-        
-        # 2. Validar solo que el estado sea rechazado
-        if estado.esRechazado():
-            return estado
+        # Recorre todos los estados creados y verifica que sea de ámbito EventoSismico y que sea Rechazado
+        for estado in Estado.estados_creados:
+            if estado.esAmbitoEventoSismico() and estado.esRechazado():
+                return estado
         return None
 
     def buscarASLSismograma(self, evento: EventoSismico):
         print(f"Buscando ASL Sismograma para el evento ID {evento.id_evento}")
         return "Sismograma_Evento_" + str(evento.id_evento) # Simulación
 
-    def rechazarEventoSismico(self, evento, usuario, estado_rechazado):
-        evento.rechazar(estado_rechazado, self.__fechaHoraActual, usuario)  # Cambia el estado del evento a rechazado con la fecha y hora actual
+    def rechazarEventoSismico(self, evento, usuario, estado_rechazado, fecha_hora, ult_cambio):
+        evento.rechazar(estado_rechazado, fecha_hora, usuario, ult_cambio)  # Cambia el estado del evento a rechazado con la fecha y hora actual
 
-    def opRegistrarResultadoRevisionManual(self, evento: EventoSismico):
-        self.__pantallaRevision.opRegistrarResultadoRevisionManual(evento)
+    # def opRegistrarResultadoRevisionManual(self, evento: EventoSismico):
+    #     self.__pantallaRevision.opRegistrarResultadoRevisionManual(evento)
 
     def obtenerEventoSeleccionado(self):
         """Retorna el evento sísmico actualmente seleccionado"""
         return self.__eventoSismicoSeleccionado
 
-    def tomarSeleccionEventoSismico(self,evento_seleccionado):
+    def buscarDatosSismicos(self, evento: EventoSismico):
+        datos_evento = evento.obtenerDatosSismicos()
+        return datos_evento
+
+    def buscarSeriesTemporales(self, evento: EventoSismico, sismografos: Sismografo):
+        series_temporales = evento.obtenerSeriesTemporales(sismografos)
+        return series_temporales
+
+    def tomarSeleccionDeEventoSismico(self, eventos_persistentes, sismografos, data, usuario):
+
+        magnitud = data.get('magnitud')
+        lat_epicentro = data.get('latEpicentro')
+        long_epicentro = data.get('longEpicentro')
+        lat_hipocentro = data.get('latHipocentro')
+        long_hipocentro = data.get('longHipocentro')
+
+        evento_seleccionado = next(
+        (evento for evento in eventos_persistentes
+         if float(evento.getValorMagnitud()) == float(magnitud)
+         and float(evento.getLatitudEpicentro()) == float(lat_epicentro)
+         and float(evento.getLongitudEpicentro()) == float(long_epicentro)
+         and float(evento.getLatitudHipocentro()) == float(lat_hipocentro)
+         and float(evento.getLongitudHipocentro()) == float(long_hipocentro)
+        ),
+        None
+    )
+
+        self.__eventoSismicoSeleccionado = evento_seleccionado
+
         if evento_seleccionado:
             # Buscar el estado 'BloqueadoEnRevision' para bloquear el evento
             estado_bloqueado = self.buscarEstadoBloqueadoEnRevision()
-            
+            fec_hora = self.obtenerFechaHoraActual()
             if not estado_bloqueado:
                 return jsonify({
                     'success': False,
@@ -139,15 +158,33 @@ class GestorRevisionManual:
                 }, 500)
 
             # Intentar bloquear el evento (cambiar su estado)
-            if self.bloquearEventoSismico(evento_seleccionado, estado_bloqueado):
-                return jsonify({
-                    'success': True,
-                    'redirect': url_for('mostrar_datos_evento')
-                })
+            if self.bloquearEventoSismico(evento_seleccionado, estado_bloqueado, fec_hora, usuario):
+                evento_sismico, series_temportales = self.buscarDatosSismicos(evento_seleccionado), self.buscarSeriesTemporales(evento_seleccionado, sismografos)
+                self.llamarCUGenerarSismograma(evento_seleccionado)
+                return evento_sismico, series_temportales
+            
+    def tomarSeleccionOpcionEvento(self, data, usuario):
+        accion = data.get('accion')
 
-    def getGestorRevisionManualEventoSismicoSeleccionado(self):
-        """Retorna el evento sísmico actualmente seleccionado"""
-        return self.__eventoSismicoSeleccionado
+        if accion == 'rechazar':
+            self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
+
+            estado_rechazado = self.obtenerEstadoRechazado()
+
+            usuario_obj = self.buscarASLogueado(usuario)
+
+            fec_hora = self.obtenerFechaHoraActual()
+            
+            self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, usuario_obj, estado_rechazado, fec_hora, self.__ultimo_cambio)
+            return jsonify({'success': True, 'mensaje': 'Evento rechazado correctamente'})
+        elif accion == 'confirmar':
+            return jsonify({'success': True, 'mensaje': 'Evento confirmado correctamente'})
+        elif accion == 'experto':
+            return jsonify({'success': True, 'mensaje': 'Revisión a experto solicitada'})
+        else:
+            return jsonify({'success': False, 'error': 'Acción no válida'}), 400
+            
+
 
 
 
