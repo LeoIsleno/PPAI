@@ -2,9 +2,12 @@ const API_BASE = 'http://127.0.0.1:5001';
 
 class PantallaRevisionManual {
 
-    constructor(cboEventoSismicos, btnAccion) {
+    constructor(cboEventoSismicos, btnAccion, cboValorMagnitud, cboAlcanceSismo, cboOrigenGeneracion) {
         this.cboEventoSismicos = cboEventoSismicos;
         this.btnAccion = btnAccion;
+        this.cboValorMagnitud = cboValorMagnitud;
+        this.cboAlcanceSismo = cboAlcanceSismo;
+        this.cboOrigenGeneracion = cboOrigenGeneracion;
     }
 
     async opRegistrarResultadoRevisionManual() {
@@ -39,34 +42,6 @@ class PantallaRevisionManual {
                     select.appendChild(option);
                 });
             }
-        // if (!valor) return;
-        // const evento = JSON.parse(valor);
-
-        // const datos = {
-        //     magnitud: evento[5],
-        //     latEpicentro: evento[1],
-        //     longEpicentro: evento[2],
-        //     latHipocentro: evento[3],
-        //     longHipocentro: evento[4]
-        // };
-
-        // fetch(`${API_BASE}/eventos`, {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(datos)
-        // })
-        // .then(response => response.json())
-        // .then(data => {
-        //     if (data.success) {
-        //         fetch(`${API_BASE}/obtener_datos_evento`)
-        //             .then(response => response.json())
-        //             .then(data => {
-        //                 if (data.success) {
-        //                     // Aquí puedes manejar los datos recibidos si es necesario
-        //                 }
-        //             });
-        //     }
-        // });
         } catch (error) {
             mensaje.textContent = 'Error al cargar los eventos sísmicos.';
             mensaje.classList.remove('d-none');
@@ -96,8 +71,6 @@ class PantallaRevisionManual {
             longHipocentro: evento[4]
         };
 
-        console.log('[DEBUG] Enviando datos al backend:', datos);
-
         fetch(`${API_BASE}/eventos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -123,7 +96,11 @@ class PantallaRevisionManual {
         window.seriesTemporalesActuales = seriesTemporales;
         const datosPrincipales = document.getElementById('datosPrincipales');
         if (!evento) {
-            mostrarError('No se pudieron cargar los datos del evento');
+            const datosPrincipales = document.getElementById('datosPrincipales');
+            datosPrincipales.innerHTML = 
+                `<div class="alert alert-danger">
+                    ${'No se pudieron cargar los datos del evento'}
+                </div>`;
             return;
         }
         datosPrincipales.innerHTML = `
@@ -187,41 +164,58 @@ class PantallaRevisionManual {
             return;
         }
         let html = '';
-        seriesTemporales.forEach((serie, idx) => {
+        const seriesPorEstacion = {};
+        seriesTemporales.forEach(serie => {
+            const nombre = serie.estacionSismologica.nombreEstacion;
+            if (!seriesPorEstacion[nombre]) {
+            seriesPorEstacion[nombre] = [];
+            }
+            seriesPorEstacion[nombre].push(serie);
+        });
+
+        Object.entries(seriesPorEstacion).forEach(([nombreEstacion, series]) => {
             html += `<div class="card mb-2">
-                <div class="card-header bg-light">
-                    <strong>Serie temporal #${idx + 1}</strong><br>
-                    <span><b>Fecha/Hora inicio:</b> ${serie.fechaHoraInicioRegistroMuestras}</span><br>
-                    <span><b>Frecuencia de muestreo:</b> ${serie.frecuenciaMuestreo} Hz</span><br>
-                    <span><b>Alerta de alarma:</b> ${serie.condicionAlarma}</span>
-                </div>
-                <div class="card-body">
-                    <h6 class="mb-2">Muestras sísmicas:</h6>
-                    <ul class="list-group">`;
+            <div class="card-header bg-light">
+                <strong>${nombreEstacion} (${series[0].estacionSismologica.codigoEstacion})</strong>
+            </div>
+            <div class="card-body">`;
+
+            series.forEach((serie, idx) => {
+            html += `
+                <div class="mb-3">
+                <span><b>Serie temporal #${idx + 1}</b></span><br>
+                <span><b>Fecha/Hora inicio:</b> ${serie.fechaHoraInicioRegistroMuestras}</span><br>
+                <span><b>Frecuencia de muestreo:</b> ${serie.frecuenciaMuestreo} Hz</span>
+                <h6 class="mt-2 mb-2">Muestras sísmicas:</h6>
+                <ul class="list-group">`;
             serie.muestras.forEach((muestra, j) => {
                 html += `<li class="list-group-item">
-                    <b>Fecha/Hora muestra ${j + 1}:</b> ${muestra.fechaHoraMuestra}<br>
-                    <ul style="margin-left: 1em;">`;
+                <b>Fecha/Hora muestra ${j + 1}:</b> ${muestra.fechaHoraMuestra}<br>
+                <ul style="margin-left: 1em;">`;
                 muestra.detalle.forEach(det => {
-                    html += `
-                        <li style="font-style:italic;">
-                            ${det.tipoDeDato === 'Velocidad de onda' ? '<b>Velocidad de onda:</b>' : ''}
-                            ${det.tipoDeDato === 'Frecuencia de onda' ? '<b>Frecuencia de onda:</b>' : ''}
-                            ${det.tipoDeDato === 'Longitud' ? '<b>Longitud:</b>' : ''}
-                            ${det.valor}
-                        </li>
-                    `;
+                html += `
+                    <li style="font-style:italic;">
+                    ${det.tipoDeDato === 'Velocidad de onda' ? '<b>Velocidad de onda:</b>' : ''}
+                    ${det.tipoDeDato === 'Frecuencia de onda' ? '<b>Frecuencia de onda:</b>' : ''}
+                    ${det.tipoDeDato === 'Longitud' ? '<b>Longitud:</b>' : ''}
+                    ${det.valor}
+                    </li>
+                `;
                 });
                 html += `
-                    </ul>
+                </ul>
                 </li>`;
             });
-            html += `</ul></div></div>`;
+            html += `</ul>
+                </div>`;
+            });
+
+            html += `</div></div>`;
         });
         contenedor.innerHTML = html;
     }
 
-    pedirOpcionEveneto() {
+    pedirOpcionEvento() {
         const accion = document.getElementById('accionEvento')
         this.btnAccion = accion;
     }
@@ -244,6 +238,70 @@ class PantallaRevisionManual {
                 window.location.href = '/'; // Redirigir al índice después de la acción
             } else {
                 alert(data.error || 'Error al ejecutar la acción');
+            }
+        });
+    }
+
+    mostrarOpcionMapa(){
+        const contenedor = document.getElementById('opcionMapa');
+        if (contenedor) {
+            contenedor.innerHTML = `<button id="btnMapa" class="btn btn-info">Ver Mapa</button>`;
+        }
+    }
+
+
+    async tomarSeleccionDeOpcionMapa() {
+
+        const response = await fetch(`${API_BASE}/mapa`)
+        const data = await response.json();
+
+        alert(data);
+    }
+    
+    pedirOpcionModificarDatos() {
+        const valorMagnitud = document.getElementById('inputMagnitud');
+        const alcanceSismo = document.getElementById('inputAlcance');
+        const origenGeneracion = document.getElementById('inputOrigen');
+        this.cboValorMagnitud = valorMagnitud;
+        this.cboAlcanceSismo = alcanceSismo;
+        this.cboOrigenGeneracion = origenGeneracion;
+    }
+
+    async tomarOpcionModificacionDatos() {
+        const valorMagnitud = this.cboValorMagnitud.value;
+        const alcanceSismo = this.cboAlcanceSismo.value;
+        const origenGeneracion = this.cboOrigenGeneracion.value;
+        await fetch(`${API_BASE}/modificar_datos_evento`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ valorMagnitud, alcanceSismo, origenGeneracion })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const msg = document.getElementById('mensajeModificacion');
+            if (data.success) {
+                msg.textContent = 'Datos modificados correctamente';
+                msg.classList.remove('d-none');
+                msg.classList.remove('alert-danger');
+                msg.classList.add('alert-success');
+                // Actualizar los datos mostrados en pantalla sin recargar
+                if (window.eventoActual) {
+                    window.eventoActual.valorMagnitud = valorMagnitud;
+                    window.eventoActual.alcanceSismo = alcanceSismo;
+                    window.eventoActual.origenGeneracion = origenGeneracion;
+                    // Llama al método de la instancia actual para refrescar los datos
+                    this.mostrarDatosSismicos(
+                        window.eventoActual,
+                        window.seriesTemporalesActuales || [],
+                        window.ultimosAlcances || [],
+                        window.ultimosOrigenes || []
+                    );
+                }
+            } else {
+                msg.textContent = data.error || 'Error al modificar';
+                msg.classList.remove('d-none');
+                msg.classList.remove('alert-success');
+                msg.classList.add('alert-danger');
             }
         });
     }

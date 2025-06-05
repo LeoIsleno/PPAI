@@ -9,7 +9,7 @@ class Sismografo:
         self.__nroSerie = nroSerie
         self.__fechaAdquisicion = fechaAdquisicion
         self.__estacionSismologica = estacionSismologica
-        self.__serieTemporal = serieTemporal if serieTemporal is not None else []
+        self.__seriesTemporales = serieTemporal
         self.__estado = estado
         self.__cambiosEstado = cambiosEstado if cambiosEstado is not None else []
 
@@ -43,15 +43,20 @@ class Sismografo:
 
     # Getter y Setter para serieTemporal
     def getSerieTemporal(self):
-        return self.__serieTemporal
+        return self.__seriesTemporales
 
     def setSerieTemporal(self, serieTemporal):
-        self.__serieTemporal = serieTemporal
+        self.__seriesTemporales = serieTemporal
 
     # Método para agregar una serie temporal
     def sosDeSerieTemporal(self, serieTemporal):
-        if serieTemporal == self.__serieTemporal:
-            return self.__estacionSismologica.getCodigoEstacion() #TODO: PUEDE QUE TAMBIEN SE TENGA QUE DEVOLVER DATOS DEL SISMOGRAFO
+        for serie in self.__seriesTemporales:
+            if serieTemporal == serie:
+                retorno = {
+                    'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
+                    'nombreEstacion': self.__estacionSismologica.getNombre()
+                }
+                return retorno
         return None
 
     def getEstado(self):

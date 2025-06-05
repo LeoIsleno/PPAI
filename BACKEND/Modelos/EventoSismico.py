@@ -97,7 +97,7 @@ class EventoSismico:
     def getEstadoActual(self):
         return self._estadoActual
 
-    def setEstadoActual(self, value):
+    def setEstado(self, value):
         self._estadoActual = value
 
     # Cambios Estado
@@ -133,25 +133,21 @@ class EventoSismico:
                 self.getLongitudHipocentro(),
                 self.getValorMagnitud()]
 
-        estado_bloqueado = Estado("BloqueadoEnRevision", "EventoSismico")
-        self.crearCambioEstado(estado_bloqueado)
+        # borre lo del cambio de estado de aca
 
     def obtenerDatosSismicos(self): #TODO: ESTE MEDTODO ESTA RETORNANDO COSAS DE MAS, O LE BORRAMOS COSAS O LO CAMBIAMOS EN EL DIAG DE SECUENCIA
         """Obtiene los datos sísmicos completos del evento seleccionado recorriendo explícitamente las relaciones"""
         # Acceso explícito a cada relación
-        alcance = self.getAlcanceSismo()
-        clasificacion = self.getClasificacion()
-        origen = self.getOrigenGeneracion()
-        descripcion_alcance = alcance.getDescripcion() if alcance else 'No disponible'
-        nombre_alcance = alcance.getNombre() if alcance else 'No disponible'
-        nombre_clasificacion = clasificacion.getNombre() if clasificacion else 'No disponible'
-        nombre_origen = origen.getNombre() if origen else 'No disponible'
-        valor_magnitud = self.getValorMagnitud()
-        fecha_hora = self.getFechaHoraOcurrencia()
-        lat_epicentro = self.getLatitudEpicentro()
-        long_epicentro = self.getLongitudEpicentro()
-        lat_hipocentro = self.getLatitudHipocentro()
-        long_hipocentro = self.getLongitudHipocentro()
+        nombre_alcance = self._alcanceSismo.getNombre() if self._alcanceSismo else 'No disponible'
+        descripcion_alcance = self._alcanceSismo.getDescripcion() if self._alcanceSismo else 'No disponible'
+        nombre_clasificacion = self._clasificacion.getNombre() if self._clasificacion else 'No disponible'
+        nombre_origen = self._origenGeneracion.getNombre() if self._clasificacion else 'No disponible'
+        valor_magnitud = self._valorMagnitud
+        fecha_hora = self._fechaHoraOcurrencia
+        lat_epicentro = self._latitudEpicentro
+        long_epicentro = self._longitudEpicentro
+        lat_hipocentro = self._latitudHipocentro
+        long_hipocentro = self._longitudHipocentro
         
         datos = {
             'alcanceSismo': nombre_alcance,
@@ -165,7 +161,6 @@ class EventoSismico:
             'latitudHipocentro': str(lat_hipocentro) if lat_hipocentro is not None else 'No disponible',
             'longitudHipocentro': str(long_hipocentro) if long_hipocentro is not None else 'No disponible'
         }
-        print("Datos obtenidos:", datos)
         return datos
 
     def obtenerSeriesTemporales(self, sismografos: Sismografo):
@@ -173,39 +168,15 @@ class EventoSismico:
         Devuelve una lista con los datos de todas las series temporales asociadas al evento,
         usando el método getDatos() de cada serie temporal.
         """
-        series = self.getSerieTemporal()
+        series = self._serieTemporal
         datos_series = []
         for serie in series:
-            datos = serie.getDatos(sismografos)  # Suponiendo que getDatos() retorna un dict o similar
+            datos = serie.getDatos(sismografos) 
             datos_series.append(datos)
         return datos_series
-        
-
-    def bloquearEvento(self, estadoBloqueado: Estado):
-        # Validar que el estado sea el correcto
-        if estadoBloqueado.esBloqueadoEnRevision() and estadoBloqueado.esAmbitoEventoSismico():
-            # Crear el cambio de estado
-            self.crearCambioEstado(estadoBloqueado)
-            return True
-        return False
-
-    def getDatos(self, sismografos: Sismografo):
-        return {
-            'alcanceSismo': self._alcanceSismo.getNombre() if self._alcanceSismo else 'No disponible',
-            'descripcionAlcance': self._alcanceSismo.getDescripcion() if self._alcanceSismo else 'No disponible',
-            'clasificacion': self._clasificacion.getNombre() if self._clasificacion else 'No disponible',
-            'origenGeneracion': self._origenGeneracion.getNombre() if self._origenGeneracion else 'No disponible',
-            'valorMagnitud': str(self._valorMagnitud),
-            'fechaHoraOcurrencia': self._fechaHoraOcurrencia.strftime('%Y-%m-%d %H:%M:%S') if self._fechaHoraOcurrencia else 'No disponible',
-            'latitudEpicentro': str(self._latitudEpicentro) if self._latitudEpicentro is not None else 'No disponible',
-            'longitudEpicentro': str(self._longitudEpicentro) if self._longitudEpicentro is not None else 'No disponible',
-            'latitudHipocentro': str(self._latitudHipocentro) if self._latitudHipocentro is not None else 'No disponible',
-            'longitudHipocentro': str(self._longitudHipocentro) if self._longitudHipocentro is not None else 'No disponible',
-            'series_temporales': [serie.getDatos(sismografos) for serie in self._serieTemporal]
-        }
     
     def obtnerEstadoActual(self):
-        for cambio in self.getCambiosEstado():
+        for cambio in self._cambiosEstado:
             if cambio.esEstadoActual():
                 return cambio
                 
@@ -216,24 +187,20 @@ class EventoSismico:
     
     def bloquear (self, estadoBloqueado: Estado, fechaHoraActual: datetime, usuario):
         
-        self.setEstadoActual(estadoBloqueado)
+        self.setEstado(estadoBloqueado)
   
-        cambio_actual = None
-        for cambio in self._cambiosEstado:
-            if cambio is not None and cambio.esEstadoActual():
-                cambio_actual = cambio
-                break
+        cambio_actual = self.obtnerEstadoActual()
             
         cambio_actual.setFechaHoraFin(fechaHoraActual) 
         
         return self.crearCambioEstado(estadoBloqueado, fechaHoraActual, usuario)
     
-    def rechazar(self, estadoRechazado: Estado, fechaHoraActual: datetime, usuario, ult_cambio):
+    def rechazar(self, estadoRechazado: Estado, fechaHoraActual: datetime, usuario, ult_cambio: CambioEstado):
         """
         Cambia el estado del evento a 'Rechazado', cierra el estado actual y registra el cambio.
         """
 
-        self.setEstadoActual(estadoRechazado)
+        self.setEstado(estadoRechazado)
 
         if ult_cambio:
             ult_cambio.setFechaHoraFin(fechaHoraActual)

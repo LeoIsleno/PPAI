@@ -18,7 +18,7 @@ class Estado:
         self.__ambito = ambito
 
 # Métodos para verificar el estado
-    def esAutoDetectado(self ):
+    def esAutoDetectado(self):
         return self.__nombreEstado == "Auto-detectado"  
 
     def esBloqueadoEnRevision(self):
@@ -31,11 +31,3 @@ class Estado:
         return self.__ambito == "EventoSismico"
 
 # --- ESTA PARTE VA FUERA DE LA CLASE ---
-Estado.estados_creados = [
-    Estado("Auto-detectado", "EventoSismico"),
-    Estado("BloqueadoEnRevision", "EventoSismico"),
-    Estado("Rechazado", "EventoSismico"),
-    Estado("Aceptado", "EventoSismico"),
-    Estado("EnRevision", "EventoSismico"),
-    Estado("PendienteDeRevision", "EventoSismico")
-]

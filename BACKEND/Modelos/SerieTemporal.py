@@ -12,7 +12,9 @@ class SerieTemporal:
         if muestraSismica is not None:
             self._muestraSismica.append(muestraSismica)
         self._estado = estado
-        self._cambiosEstado = cambiosEstado if cambiosEstado is not None else []
+
+    def __str__(self):
+        return f"Serie Temporal: {self.getFechaHoraInicioRegistroMuestras()} - Frecuencia: {self.getFrecuenciaMuestreo()} Hz - Alarma: {self.getCondicionAlarma()} - Estado: {self.getEstado()}" 
 
     # Getters y setters
     def getFechaHoraInicioRegistroMuestras(self):
@@ -59,21 +61,24 @@ class SerieTemporal:
     def setEstado(self, estado):
         self._estado = estado
 
-    def getCambiosEstado(self):
-        return self._cambiosEstado
-
-    def setCambiosEstado(self, cambios):
-        self._cambiosEstado = cambios
-
-    def agregarCambioEstado(self, cambio: CambioEstado):
-        self._cambiosEstado.append(cambio)
-
     def getDatos(self, sismografos):
+        estacion_sismologica = 'nada'
+
+        muestras_datos = []
+        for muestra in self._muestraSismica:
+            muestras_datos.append(muestra.getDatos())
+
+        for sismografo in sismografos:
+            datos = sismografo.sosDeSerieTemporal(self)
+            if datos is not None:
+                estacion_sismologica = datos
+                break
+
         return {
             'fechaHoraInicioRegistroMuestras': str(self._fechaHoraInicioRegistroMuestras) if self._fechaHoraInicioRegistroMuestras else 'No disponible',
             'fechaHoraRegistro': str(self._fechaHoraRegistro) if self._fechaHoraRegistro else 'No disponible',
             'frecuenciaMuestreo': self._frecuenciaMuestreo if self._frecuenciaMuestreo is not None else 'No disponible',
             'condicionAlarma': self._condicionAlarma if self._condicionAlarma is not None else 'No disponible',
-            'muestras': [muestra.getDatos() for muestra in self._muestraSismica],
-            'codigoEstacion': [sismografo.sosDeSerieTemporal(self) for sismografo in sismografos]
+            'muestras': muestras_datos,
+            'estacionSismologica': estacion_sismologica 
         }

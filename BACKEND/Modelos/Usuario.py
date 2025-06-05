@@ -24,7 +24,3 @@ class Usuario:
 
     def setFechaAlta(self, fechaAlta):
         self.__fechaAlta = fechaAlta
-
-    # Devuelve el usuario logueado (en este contexto, el propio objeto)
-    def getUsuarioLogueado(self):
-        return self

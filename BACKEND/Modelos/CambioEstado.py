@@ -2,7 +2,7 @@ import datetime
 from .Estado import Estado
 
 class CambioEstado:
-    def __init__(self, fechaHoraInicio: datetime.datetime, estado: Estado, usuario=None, fechaHoraFin: datetime.datetime = None):
+    def __init__(self, fechaHoraInicio: datetime.datetime, estado: Estado, usuario, fechaHoraFin: datetime.datetime = None):
         self.__fechaHoraInicio = fechaHoraInicio  # Antes: fechaHoraDesde
         self.__fechaHoraFin = fechaHoraFin        # Antes: fechaHoraHasta
         self.__estado = estado
@@ -29,7 +29,7 @@ class CambioEstado:
     def setEstado(self, estado):
         self.__estado = estado
 
-    # Usuario (opcional)
+    # Usuario
     def getUsuario(self):
         return self.__usuario
 

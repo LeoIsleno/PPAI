@@ -22,7 +22,7 @@ class ListarEventosSismicos:
 
     # Función principal para crear una lista de eventos sísmicos de ejemplo
     @staticmethod
-    def crear_eventos_sismicos():
+    def crear_eventos_sismicos(sismografos, usuario):
         # Crear estados posibles para los eventos
         estado_auto_detectado = Estado("Auto-detectado", "EventoSismico")
         estado_normal = Estado("Normal", "EventoSismico")
@@ -74,63 +74,13 @@ class ListarEventosSismicos:
             long_hipocentro = -63.9 + (i * 0.1)
             magnitud = round(5.0 + (i % 5) * 0.3, 2)  # Magnitud variable entre 5.0 y 6.2
             # Cantidad aleatoria de series temporales por evento (1 a 3)
-            num_series = randint(1, 3)
-            series_temporales = []
-            for s in range(num_series):
-                # Cantidad aleatoria de muestras por serie (2 a 4)
-                num_muestras = randint(2, 4)
-                muestras = []
-                for m in range(num_muestras):
-                    # Cantidad aleatoria de detalles por muestra (2 o 3)
-                    num_detalles = randint(2, 3)
-                    detalles = []
-                    # Siempre incluir los tres tipos, pero puede faltar uno aleatoriamente
-                    tipos = [
-                        ('Velocidad de onda', 'Km/seg', 'Km/seg', ['7', '7.02', '6.99', '7.1']),
-                        ('Frecuencia de onda', 'Hz', 'Hz', ['10', '10.01', '9.98', '10.2']),
-                        ('Longitud', 'km/ciclo', 'km/ciclo', ['0.7', '0.69', '0.71', '0.68'])
-                    ]
-                    tipos_detalle = tipos.copy()
-                    # Eliminar uno aleatoriamente si solo se quieren 2 detalles
-                    if num_detalles == 2:
-                        tipos_detalle.pop(randint(0,2))
-                    for tipo, unidad, sufijo, valores in tipos_detalle:
-                        valor = choice(valores)
-                        # Crear el detalle de la muestra según el tipo
-                        if tipo == 'Velocidad de onda':
-                            detalles.append(DetalleMuestraSismica(f'{valor} {sufijo}', TipoDeDato(tipo, unidad, 10)))
-                        elif tipo == 'Frecuencia de onda':
-                            detalles.append(DetalleMuestraSismica(f'{valor} {sufijo}', TipoDeDato(tipo, unidad, 20)))
-                        elif tipo == 'Longitud':
-                            detalles.append(DetalleMuestraSismica(f'{valor} {sufijo}', TipoDeDato(tipo, unidad, 1)))
-                    # Fecha de la muestra (espaciada 5 minutos entre cada una)
-                    muestra_fecha = base_fecha.replace(minute=5 + m*5)
-                    muestras.append(MuestraSismica(muestra_fecha, detalles))
-                # Cambios de estado para la serie temporal
-                cambios_estado_serie = [
-                    CambioEstado(
-                        base_fecha,
-                        estado_serie_activa
-                    )
-                ]
-                # Crear la serie temporal con sus muestras, estado y cambios de estado
-                serie_temporal = SerieTemporal(
-                    base_fecha,
-                    base_fecha,
-                    50 + 10*s,  # frecuencia de muestreo
-                    bool(s % 2),
-                    muestras[0],
-                    estado_serie_activa,
-                    cambios_estado_serie
-                )
-                for muestra in muestras[1:]:
-                    serie_temporal.agregarMuestraSismica(muestra)
-                series_temporales.append(serie_temporal)
+            
             # Cambios de estado del evento (historial)
             cambios_estado = [
                 CambioEstado(
                     base_fecha,
-                    estado_auto_detectado if i % 2 == 0 else estado_normal
+                    estado_auto_detectado if i % 2 == 0 else estado_normal,
+                    usuario
                 )
             ]
             # Crear el evento sísmico con todos sus datos y series
@@ -146,7 +96,7 @@ class ListarEventosSismicos:
                 cambiosEstado=cambios_estado,
                 clasificacion=clasificacion_superficial,
                 alcanceSismo=alcance_local,
-                serieTemporal=series_temporales
+                serieTemporal=sismografos[i].getSerieTemporal() + sismografos[i+1].getSerieTemporal() if i < len(sismografos) else [],
             )
             # Asignar un id_evento basado en la instancia en memoria
             evento.id_evento = id(evento)
@@ -171,7 +121,16 @@ class ListarEventosSismicos:
             OrigenDeGeneracion("Artificial", "Sismo provocado por actividad humana")
         ]
 
-
+    def obtener_estados():
+        # Devuelve una lista de objetos Estado
+        return [
+            Estado("Auto-detectado", "EventoSismico"),
+            Estado("BloqueadoEnRevision", "EventoSismico"),
+            Estado("Rechazado", "EventoSismico"),
+            Estado("Aceptado", "EventoSismico"),
+            Estado("EnRevision", "EventoSismico"),
+            Estado("PendienteDeRevision", "EventoSismico")
+        ]
 
 
 

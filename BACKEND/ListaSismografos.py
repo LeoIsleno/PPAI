@@ -1,6 +1,14 @@
 from ListaEventosSismicos import ListarEventosSismicos as listaEventos
 from Modelos.Sismografo import Sismografo
 from Modelos.EstacionSismologica import EstacionSismologica
+from Modelos.MuestraSismica import MuestraSismica
+from Modelos.DetalleMuestraSismica import DetalleMuestraSismica
+from Modelos.TipoDeDato import TipoDeDato
+from Modelos.SerieTemporal import SerieTemporal
+from Modelos.CambioEstado import CambioEstado
+from Modelos.Estado import Estado
+from random import randint, choice
+from datetime import datetime, timedelta
 
 # Supongamos que lista_eventos_sismicos es una lista de eventos sismicos ya creada en listaEventosSismicos.py
 class ListaSismografos:
@@ -9,99 +17,85 @@ class ListaSismografos:
         self.sismografos = self.crearSismografos()
 
     @staticmethod
-    def crearSismografos():
+    def crear_sismografos(usuario):
         # Crear una instancia de ListarEventosSismicos para obtener los eventos sismicos
         sismografos = []
-        eventos = listaEventos.crear_eventos_sismicos()
-        estacion1 = EstacionSismologica(
-            codigoEstacion="EST001",
-            nombre="Estación Central",
-            latitud=34.05,
-            longitud=-118.25,
-            documentoCertificacionAdq="certificacion.pdf",
-            fechaSolicitudCertificacion="2023-01-01",
-            nroCertificacionAdquisicion="CERT12345" 
-        )
+        estado_serie_activa = Estado("Activa", "SerieTemporal")
+        
 
-        sismografo1 = Sismografo(
-            identificadorSismografo=1,
-            nroSerie="SISMO123",
-            fechaAdquisicion="2023-10-01",
-            estacionSismologica=estacion1,
-            serieTemporal=eventos[0].getSerieTemporal()[0]  # Asumiendo que cada evento tiene al menos una serie temporal
-        )
-        estacion2 = EstacionSismologica(
-            codigoEstacion="EST002",
-            nombre="Estación Norte",
-            latitud=35.00,
-            longitud=-119.00,
-            documentoCertificacionAdq="certificacion2.pdf",
-            fechaSolicitudCertificacion="2023-01-02",
-            nroCertificacionAdquisicion="CERT12346"
-        )
-        sismografo2 = Sismografo(
-            identificadorSismografo=2,
-            nroSerie="SISMO456",
-            fechaAdquisicion="2023-10-02",
-            estacionSismologica=estacion2,
-            serieTemporal=eventos[1].getSerieTemporal()[0]
-        )
+        for i in range(1, 20):  # Cambia 16 por la cantidad que desees +1
 
-        estacion3 = EstacionSismologica(
-            codigoEstacion="EST003",
-            nombre="Estación Sur",
-            latitud=33.50,
-            longitud=-117.80,
-            documentoCertificacionAdq="certificacion3.pdf",
-            fechaSolicitudCertificacion="2023-01-03",
-            nroCertificacionAdquisicion="CERT12347"
-        )
-        sismografo3 = Sismografo(
-            identificadorSismografo=3,
-            nroSerie="SISMO789",
-            fechaAdquisicion="2023-10-03",
-            estacionSismologica=estacion3,
-            serieTemporal=eventos[2].getSerieTemporal()[0]
-        )
+            series_temporales = []
+            base_fecha = datetime(2025, 2, 21, 19, 5, 41) + timedelta(hours=i)
+            num_series = randint(2, 5)
+            for s in range(num_series):
+                # Cantidad aleatoria de muestras por serie (2 a 4)
+                num_muestras = randint(2, 4)
+                muestras = []
+                for m in range(num_muestras):
+                    # Cantidad aleatoria de detalles por muestra (2 o 3)
+                    num_detalles = randint(2, 3)
+                    detalles = []
+                    # Siempre incluir los tres tipos, pero puede faltar uno aleatoriamente
+                    tipos = [
+                        ('Velocidad de onda', 'Km/seg', 'Km/seg', ['7', '7.02', '6.99', '7.1']),
+                        ('Frecuencia de onda', 'Hz', 'Hz', ['10', '10.01', '9.98', '10.2']),
+                        ('Longitud', 'km/ciclo', 'km/ciclo', ['0.7', '0.69', '0.71', '0.68'])
+                    ]
+                    tipos_detalle = tipos.copy()
+                    # Eliminar uno aleatoriamente si solo se quieren 2 detalles
+                    if num_detalles == 2:
+                        tipos_detalle.pop(randint(0,2))
+                    for tipo, unidad, sufijo, valores in tipos_detalle:
+                        valor = choice(valores)
+                        # Crear el detalle de la muestra según el tipo
+                        if tipo == 'Velocidad de onda':
+                            detalles.append(DetalleMuestraSismica(f'{valor} {sufijo}', TipoDeDato(tipo, unidad, 10)))
+                        elif tipo == 'Frecuencia de onda':
+                            detalles.append(DetalleMuestraSismica(f'{valor} {sufijo}', TipoDeDato(tipo, unidad, 20)))
+                        elif tipo == 'Longitud':
+                            detalles.append(DetalleMuestraSismica(f'{valor} {sufijo}', TipoDeDato(tipo, unidad, 1)))
+                    # Fecha de la muestra (espaciada 5 minutos entre cada una)
+                    muestra_fecha = base_fecha.replace(minute=5 + m*5)
+                    muestras.append(MuestraSismica(muestra_fecha, detalles))
+                # Cambios de estado para la serie temporal
+                cambios_estado_serie = [
+                    CambioEstado(
+                        base_fecha,
+                        estado_serie_activa,
+                        usuario
+                    )
+                ]
+                # Crear la serie temporal con sus muestras, estado y cambios de estado
+                serie_temporal = SerieTemporal(
+                    base_fecha,
+                    base_fecha,
+                    50 + 10*s,  # frecuencia de muestreo
+                    bool(s % 2),
+                    muestras[0],
+                    estado_serie_activa,
+                    cambios_estado_serie
+                )
+                for muestra in muestras[1:]:
+                    serie_temporal.agregarMuestraSismica(muestra)
+                series_temporales.append(serie_temporal)
 
-        estacion4 = EstacionSismologica(
-            codigoEstacion="EST004",
-            nombre="Estación Este",
-            latitud=34.20,
-            longitud=-118.00,
-            documentoCertificacionAdq="certificacion4.pdf",
-            fechaSolicitudCertificacion="2023-01-04",
-            nroCertificacionAdquisicion="CERT12348"
-        )
-        sismografo4 = Sismografo(
-            identificadorSismografo=4,
-            nroSerie="SISMO101",
-            fechaAdquisicion="2023-10-04",
-            estacionSismologica=estacion4,
-            serieTemporal=eventos[3].getSerieTemporal()[0]
-        )
-
-        estacion5 = EstacionSismologica(
-            codigoEstacion="EST005",
-            nombre="Estación Oeste",
-            latitud=34.10,
-            longitud=-118.50,
-            documentoCertificacionAdq="certificacion5.pdf",
-            fechaSolicitudCertificacion="2023-01-05",
-            nroCertificacionAdquisicion="CERT12349"
-        )
-        sismografo5 = Sismografo(
-            identificadorSismografo=5,
-            nroSerie="SISMO102",
-            fechaAdquisicion="2023-10-05",
-            estacionSismologica=estacion5,
-            serieTemporal=eventos[4].getSerieTemporal()[0]
-        )
-
-
-        sismografos.append(sismografo1)
-        sismografos.append(sismografo2)
-        sismografos.append(sismografo3)
-        sismografos.append(sismografo4)
-        sismografos.append(sismografo5)
+            estacion = EstacionSismologica(
+            codigoEstacion=f"EST{str(i).zfill(3)}",
+            nombre=f"Estación {i}",
+            latitud=34.0 + i * 0.1,
+            longitud=-118.0 - i * 0.1,
+            documentoCertificacionAdq=f"certificacion{i}.pdf",
+            fechaSolicitudCertificacion=f"2023-01-{str(i).zfill(2)}",
+            nroCertificacionAdquisicion=f"CERT123{44 + i}"
+            )
+            # Usa eventos de forma cíclica si hay menos eventos que estaciones
+            sismografo = Sismografo(
+            identificadorSismografo=i,
+            nroSerie=f"SISMO{str(100 + i)}",
+            fechaAdquisicion=f"2023-10-{str(i).zfill(2)}",
+            estacionSismologica=estacion,
+            serieTemporal = series_temporales
+            )
+            sismografos.append(sismografo)
         return sismografos

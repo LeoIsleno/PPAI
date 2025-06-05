@@ -22,11 +22,9 @@ class Sesion:
         self.__fechaHoraHasta = fechaHoraHasta
 
 # Usuario
-    def getUsuario(self):
-        return self.__usuario
 
     def setUsuario(self, usuario):
         self.__usuario = usuario
 
-    def obtenerUsuario(self, usuario: Usuario):
-        return self.__usuario.getUsuarioLogueado()
+    def obtenerUsuario(self):
+        return self.__usuario

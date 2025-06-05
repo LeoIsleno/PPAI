@@ -4,10 +4,10 @@ const btnRegistrar = document.getElementById('btnRegistrar');
 
 window.addEventListener('DOMContentLoaded', async () => {
    pantalla.mostrarEventosSismicos();
+   pantalla.solicitarEventoSismico();
 });
 
 btnRegistrar.addEventListener('click', function () {
-   pantalla.solicitarEventoSismico();
    pantalla.tomarSeleccionDeEventoSismico();
 });
 
