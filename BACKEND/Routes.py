@@ -64,7 +64,7 @@ def modificar_datos_evento():
 def ejecutar_accion():
     data = request.get_json()
     global usuario  # Asegúrate de que 'usuario' esté definido globalmente
-    return gestor.tomarSeleccionOpcionEvento(data, usuario_logueado)
+    return gestor.tomarSeleccionOpcionEvento(data, estados)
 
 @app.route('/mapa', methods=['GET'])
 def mapa():

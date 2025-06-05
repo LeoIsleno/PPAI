@@ -63,9 +63,9 @@ class GestorRevisionManual:
         return sesion.obtenerUsuario()
         
 
-    def obtenerEstadoRechazado(self):
+    def obtenerEstadoRechazado(self, estados):
         # Recorre todos los estados creados y verifica que sea de ámbito EventoSismico y que sea Rechazado
-        for estado in Estado.estados_creados:
+        for estado in estados:
             if estado.esAmbitoEventoSismico() and estado.esRechazado():
                 return estado
         return None
@@ -121,7 +121,7 @@ class GestorRevisionManual:
                 self.llamarCUGenerarSismograma(evento_seleccionado)
                 return evento_sismico, series_temportales
             
-    def tomarSeleccionOpcionEvento(self, data, usuario_logueado):
+    def tomarSeleccionOpcionEvento(self, data, estados):
         evento = self.__eventoSismicoSeleccionado
         if not evento:
             return jsonify({'success': False, 'error': 'No hay evento seleccionado'}), 404
@@ -131,7 +131,7 @@ class GestorRevisionManual:
         if accion == 'rechazar':
             self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
 
-            estado_rechazado = self.obtenerEstadoRechazado()
+            estado_rechazado = self.obtenerEstadoRechazado(estados)
 
             fec_hora = self.obtenerFechaHoraActual()
             
