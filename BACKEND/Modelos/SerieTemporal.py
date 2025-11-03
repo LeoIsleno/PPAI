@@ -9,8 +9,12 @@ class SerieTemporal:
         self._frecuenciaMuestreo = frecuenciaMuestreo
         self._condicionAlarma = condicionAlarma
         self._muestraSismica = []
+        # Manejar tanto una lista como un objeto individual
         if muestraSismica is not None:
-            self._muestraSismica.append(muestraSismica)
+            if isinstance(muestraSismica, list):
+                self._muestraSismica = muestraSismica
+            else:
+                self._muestraSismica.append(muestraSismica)
         self._estado = estado
 
     def __str__(self):

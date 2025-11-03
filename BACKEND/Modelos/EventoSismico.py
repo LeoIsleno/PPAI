@@ -181,18 +181,22 @@ class EventoSismico:
                 return cambio
                 
     def crearCambioEstado(self, estado: Estado, fechaHoraActual: datetime, usuario):
+        """
+        Crea un CambioEstado registrando el `Usuario` que efectuó el cambio.
+        """
         nuevo_cambio = CambioEstado(fechaHoraActual, estado, usuario)
         self._cambiosEstado.append(nuevo_cambio)
         return nuevo_cambio
     
     def bloquear (self, estadoBloqueado: Estado, fechaHoraActual: datetime, usuario):
-        
+
         self.setEstado(estadoBloqueado)
-  
+
         cambio_actual = self.obtnerEstadoActual()
-            
-        cambio_actual.setFechaHoraFin(fechaHoraActual) 
-        
+
+        if cambio_actual:
+            cambio_actual.setFechaHoraFin(fechaHoraActual)
+
         return self.crearCambioEstado(estadoBloqueado, fechaHoraActual, usuario)
     
     def rechazar(self, estadoRechazado: Estado, fechaHoraActual: datetime, usuario, ult_cambio: CambioEstado):
@@ -205,7 +209,7 @@ class EventoSismico:
         if ult_cambio:
             ult_cambio.setFechaHoraFin(fechaHoraActual)
 
-        return self.crearCambioEstado(estadoRechazado, fechaHoraActual, usuario) 
+        return self.crearCambioEstado(estadoRechazado, fechaHoraActual, usuario)
 
         
 

@@ -83,11 +83,14 @@ class PantallaRevisionManual {
                 sessionStorage.setItem('seriesTemporales', JSON.stringify(data.series_temporales || []));
                 sessionStorage.setItem('ultimosAlcances', JSON.stringify(data.alcances_sismo || []));
                 sessionStorage.setItem('ultimosOrigenes', JSON.stringify(data.origenes_generacion || []));
-                window.location.href = 'datos_evento.html'; // Redirigir a la página de datos del evento
+                window.location.href = 'datos_evento.html';
             } else {
                 alert(data.error || 'No se pudo seleccionar el evento');
-                console.warn('[WARN] No se pudo seleccionar el evento:', data);
             }
+        })
+        .catch(error => {
+            console.error('Error en fetch:', error);
+            alert('Error de conexión con el servidor');
         });
     }
 
@@ -235,10 +238,20 @@ class PantallaRevisionManual {
         .then(data => {
             if (data.success) {
                 alert(data.mensaje || 'Acción ejecutada con éxito');
-                window.location.href = '/'; // Redirigir al índice después de la acción
+                sessionStorage.removeItem('eventoSeleccionado');
+                sessionStorage.removeItem('seriesTemporales');
+                sessionStorage.removeItem('ultimosAlcances');
+                sessionStorage.removeItem('ultimosOrigenes');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 100);
             } else {
                 alert(data.error || 'Error al ejecutar la acción');
             }
+        })
+        .catch(error => {
+            console.error('Error en tomarSeleccionOpcionEvento:', error);
+            alert('Error de conexión con el servidor');
         });
     }
 
@@ -280,15 +293,23 @@ class PantallaRevisionManual {
         .then(data => {
             const msg = document.getElementById('mensajeModificacion');
             if (data.success) {
-                msg.textContent = 'Datos modificados correctamente';
+                msg.textContent = '✓ Datos modificados correctamente';
                 msg.classList.remove('d-none');
                 msg.classList.remove('alert-danger');
                 msg.classList.add('alert-success');
+                // Hacer scroll al mensaje
+                msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Ocultar el mensaje después de 5 segundos
+                setTimeout(() => {
+                    msg.classList.add('d-none');
+                }, 5000);
                 // Actualizar los datos mostrados en pantalla sin recargar
                 if (window.eventoActual) {
                     window.eventoActual.valorMagnitud = valorMagnitud;
                     window.eventoActual.alcanceSismo = alcanceSismo;
                     window.eventoActual.origenGeneracion = origenGeneracion;
+                    // Actualizar también en sessionStorage
+                    sessionStorage.setItem('eventoSeleccionado', JSON.stringify(window.eventoActual));
                     // Llama al método de la instancia actual para refrescar los datos
                     this.mostrarDatosSismicos(
                         window.eventoActual,
@@ -298,10 +319,12 @@ class PantallaRevisionManual {
                     );
                 }
             } else {
-                msg.textContent = data.error || 'Error al modificar';
+                msg.textContent = '✗ ' + (data.error || 'Error al modificar');
                 msg.classList.remove('d-none');
                 msg.classList.remove('alert-success');
                 msg.classList.add('alert-danger');
+                // Hacer scroll al mensaje
+                msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         });
     }

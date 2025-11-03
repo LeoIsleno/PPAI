@@ -3,7 +3,9 @@ from Modelos.Estado import Estado
 from Modelos.EventoSismico import EventoSismico
 from Modelos.Sismografo import Sismografo
 from Modelos.Sesion import Sesion
-from flask import jsonify
+
+from BDD.database import SessionLocal
+from BDD.repositories.evento_repository import EventoRepository
 
 class GestorRevisionManual:
     def __init__(self):
@@ -41,10 +43,23 @@ class GestorRevisionManual:
 
     def bloquearEventoSismico(self, evento: EventoSismico, estado_bloqueado: Estado, fecha_hora: datetime, usuario):
         """
-        Bloquea un evento sísmico cambiando su estado actual y registrando el cambio
+        Bloquea un evento sísmico cambiando su estado actual y registrando el cambio.
+        Este método recibe un `Usuario` y lo pasa a `EventoSismico.bloquear`, que se
+        encargará de registrar el empleado asociado.
         """
-        self.__ultimo_cambio = evento.bloquear(estado_bloqueado, fecha_hora, usuario)  # Cambia el estado del evento a bloqueado con la fecha y hora actual
-        return True 
+        self.__ultimo_cambio = evento.bloquear(estado_bloqueado, fecha_hora, usuario)
+
+        db = SessionLocal()
+        try:
+            EventoRepository.from_domain(db, evento)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
+        return True
     
 
     def llamarCUGenerarSismograma(self, evento: EventoSismico):
@@ -54,13 +69,27 @@ class GestorRevisionManual:
 
 
     def validarDatosMinimosRequeridos(self, evento):
-            # Validar datos mínimos
         if not (evento.getValorMagnitud() and evento.getAlcanceSismo() and evento.getOrigenGeneracion()):
-            return jsonify({'success': False, 'error': 'Faltan datos obligatorios del evento'}), 400
+            return {'success': False, 'error': 'Faltan datos obligatorios del evento', 'status_code': 400}
         
     def buscarASLogueado(self, sesion:Sesion):
-        
-        return sesion.obtenerUsuario()
+        """
+        Obtiene el usuario desde la sesión y verifica que el empleado asociado
+        tenga rol de 'Administrador de Sismos'. Devuelve el objeto Usuario si
+        está autorizado, o None si no lo está.
+        """
+        if sesion is None:
+            return None
+
+        usuario = sesion.obtenerUsuario()
+        if usuario is None:
+            return None
+
+        # Delegar la comprobación de rol al propio Usuario (encapsula el acceso al Empleado)
+        if usuario.esAdministradorSismos():
+            return usuario
+
+        return None
         
 
     def obtenerEstadoRechazado(self, estados):
@@ -71,7 +100,20 @@ class GestorRevisionManual:
         return None
 
     def rechazarEventoSismico(self, evento: EventoSismico, usuario, estado_rechazado, fecha_hora, ult_cambio):
-        evento.rechazar(estado_rechazado, fecha_hora, usuario, ult_cambio)  # Cambia el estado del evento a rechazado con la fecha y hora actual
+        evento.rechazar(estado_rechazado, fecha_hora, usuario, ult_cambio)
+
+        db = SessionLocal()
+        try:
+            EventoRepository.from_domain(db, evento)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
+        return True
+        
 
     def buscarDatosSismicos(self, evento: EventoSismico):
         datos_evento = evento.obtenerDatosSismicos()
@@ -106,13 +148,13 @@ class GestorRevisionManual:
             # Buscar el estado 'BloqueadoEnRevision' para bloquear el evento
             estado_bloqueado = self.buscarEstadoBloqueadoEnRevision(estados)
             usuario = self.buscarASLogueado(usuario_logueado)
+            # Verificar que el usuario esté autorizado (empleado con rol administrador)
+            if usuario is None:
+                return {'success': False, 'error': 'Usuario no autorizado para bloquear eventos', 'status_code': 403}
             self._usuarioLogueado = usuario
             fec_hora = self.obtenerFechaHoraActual()
             if not estado_bloqueado:
-                return jsonify({
-                    'success': False,
-                    'error': 'Error al crear el estado bloqueado'
-                }, 500)
+                return {'success': False, 'error': 'Error al crear el estado bloqueado', 'status_code': 500}
 
             # Intentar bloquear el evento (cambiar su estado)
             if self.bloquearEventoSismico(evento_seleccionado, estado_bloqueado, fec_hora, usuario):
@@ -120,11 +162,15 @@ class GestorRevisionManual:
                 series_temportales = self.buscarSeriesTemporales(evento_seleccionado, sismografos)
                 self.llamarCUGenerarSismograma(evento_seleccionado)
                 return evento_sismico, series_temportales
+            else:
+                return {'success': False, 'error': 'Error al bloquear el evento', 'status_code': 500}
+        else:
+            return {'success': False, 'error': 'Evento no encontrado', 'status_code': 404}
             
     def tomarSeleccionOpcionEvento(self, data, estados):
         evento = self.__eventoSismicoSeleccionado
         if not evento:
-            return jsonify({'success': False, 'error': 'No hay evento seleccionado'}), 404
+            return {'success': False, 'error': 'No hay evento seleccionado', 'status_code': 404}
 
         accion = data.get('accion')
 
@@ -135,14 +181,15 @@ class GestorRevisionManual:
 
             fec_hora = self.obtenerFechaHoraActual()
             
+            # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
             self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_rechazado, fec_hora, self.__ultimo_cambio)
-            return jsonify({'success': True, 'mensaje': 'Evento rechazado correctamente'})
+            return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
         elif accion == 'confirmar':
-            return jsonify({'success': True, 'mensaje': 'Evento confirmado correctamente'})
+            return {'success': True, 'mensaje': 'Evento confirmado correctamente'}
         elif accion == 'experto':
-            return jsonify({'success': True, 'mensaje': 'Revisión a experto solicitada'})
+            return {'success': True, 'mensaje': 'Revisión a experto solicitada'}
         else:
-            return jsonify({'success': False, 'error': 'Acción no válida'}), 400
+            return {'success': False, 'error': 'Acción no válida', 'status_code': 400}
         
     def tomarSeleccionDeOpcionMapa(self):
         return '¹aqui mapa¹'
@@ -150,7 +197,7 @@ class GestorRevisionManual:
     def tomarOpcionModificacionDatos(self, request, lista_alcances, eventos_persistentes, lista_origenes):
         evento = self.__eventoSismicoSeleccionado
         if not evento:
-            return jsonify({'success': False, 'error': 'No hay evento seleccionado'}), 404
+            return {'success': False, 'error': 'No hay evento seleccionado', 'status_code': 404}
         data = request.json
         if 'valorMagnitud' in data:
             evento.setValorMagnitud(data['valorMagnitud'])
@@ -169,7 +216,18 @@ class GestorRevisionManual:
             if ev is evento:
                 eventos_persistentes[idx] = evento
                 break
-        return jsonify({'success': True})
+        
+        db = SessionLocal()
+        try:
+            EventoRepository.from_domain(db, evento)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+            
+        return {'success': True}
             
 
 
