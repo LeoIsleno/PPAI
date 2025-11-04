@@ -3,6 +3,7 @@ from Modelos.Estado import Estado
 from Modelos.EventoSismico import EventoSismico
 from Modelos.Sismografo import Sismografo
 from Modelos.Sesion import Sesion
+from Modelos.MagnitudRichter import MagnitudRichter
 
 from BDD.database import SessionLocal
 from BDD.repositories.evento_repository import EventoRepository
@@ -69,7 +70,13 @@ class GestorRevisionManual:
 
 
     def validarDatosMinimosRequeridos(self, evento):
-        if not (evento.getValorMagnitud() and evento.getAlcanceSismo() and evento.getOrigenGeneracion()):
+        magn = None
+        try:
+            magn_obj = evento.getMagnitud()
+            magn = magn_obj.getNumero() if magn_obj else None
+        except Exception:
+            magn = None
+        if not (magn is not None and evento.getAlcanceSismo() and evento.getOrigenGeneracion()):
             return {'success': False, 'error': 'Faltan datos obligatorios del evento', 'status_code': 400}
         
     def buscarASLogueado(self, sesion:Sesion):
@@ -114,6 +121,29 @@ class GestorRevisionManual:
 
         return True
         
+    def confirmarEventoSismico(self, evento: EventoSismico, usuario, estado_aceptado, fecha_hora, ult_cambio):
+        """
+        Confirma un evento sísmico delegando en el dominio y persistiendo el cambio.
+        Se mantiene la misma forma que `rechazarEventoSismico`: el método del gestor
+        delega la lógica al dominio (`evento.confirmar`) y luego persiste usando
+        `EventoRepository` dentro de una sesión.
+        """
+        # Delegar la confirmación al dominio; se espera que esto devuelva/actualice
+        # el último cambio y pueda lanzar excepciones en caso de error.
+        self.__ultimo_cambio = evento.confirmar(estado_aceptado, fecha_hora, usuario, ult_cambio)
+
+        db = SessionLocal()
+        try:
+            EventoRepository.from_domain(db, evento)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
+        return True
+        
 
     def buscarDatosSismicos(self, evento: EventoSismico):
         datos_evento = evento.obtenerDatosSismicos()
@@ -126,6 +156,11 @@ class GestorRevisionManual:
     def tomarSeleccionDeEventoSismico(self, eventos_persistentes, sismografos, data, usuario_logueado, estados):
 
         magnitud = data.get('magnitud')
+        # The frontend may send a magnitud as a number or as an object like { numero: X, descripcion: Y }
+        if isinstance(magnitud, dict):
+            magnitud_val = magnitud.get('numero')
+        else:
+            magnitud_val = magnitud
         lat_epicentro = data.get('latEpicentro')
         long_epicentro = data.get('longEpicentro')
         lat_hipocentro = data.get('latHipocentro')
@@ -133,7 +168,7 @@ class GestorRevisionManual:
 
         evento_seleccionado = next(
         (evento for evento in eventos_persistentes
-         if float(evento.getValorMagnitud()) == float(magnitud)
+         if (evento.getMagnitud() is not None and magnitud_val is not None and float(evento.getMagnitud().getNumero()) == float(magnitud_val))
          and float(evento.getLatitudEpicentro()) == float(lat_epicentro)
          and float(evento.getLongitudEpicentro()) == float(long_epicentro)
          and float(evento.getLatitudHipocentro()) == float(lat_hipocentro)
@@ -184,8 +219,18 @@ class GestorRevisionManual:
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
             self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_rechazado, fec_hora, self.__ultimo_cambio)
             return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
-        elif accion == 'confirmar':
+        
+        if accion == 'conformar':
+            self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
+
+            estado_conformado = self.obtenerEstadoConformado(estados)
+
+            fec_hora = self.obtenerFechaHoraActual()
+            
+            # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
+            self.confirmarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_conformado, fec_hora, self.__ultimo_cambio)
             return {'success': True, 'mensaje': 'Evento confirmado correctamente'}
+        
         elif accion == 'experto':
             return {'success': True, 'mensaje': 'Revisión a experto solicitada'}
         else:
@@ -199,8 +244,23 @@ class GestorRevisionManual:
         if not evento:
             return {'success': False, 'error': 'No hay evento seleccionado', 'status_code': 404}
         data = request.json
-        if 'valorMagnitud' in data:
-            evento.setValorMagnitud(data['valorMagnitud'])
+        if 'magnitud' in data:
+            # Accept either a numeric value or an object { numero: X, descripcion: Y }
+            raw_magn = data['magnitud']
+            if isinstance(raw_magn, dict):
+                maybe_num = raw_magn.get('numero')
+            else:
+                maybe_num = raw_magn
+            try:
+                num = float(maybe_num) if maybe_num is not None else None
+            except Exception:
+                num = None
+            if num is not None:
+                # crear o actualizar objeto MagnitudRichter
+                if evento.getMagnitud() is None:
+                    evento.setMagnitud(MagnitudRichter(None, num))
+                else:
+                    evento.getMagnitud().setNumero(num)
         if 'alcanceSismo' in data:
             alcances = lista_alcances
             alcance = next((a for a in alcances if a.getNombre() == data['alcanceSismo']), None)

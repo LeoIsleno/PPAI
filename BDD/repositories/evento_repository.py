@@ -8,6 +8,7 @@ from .clasificacion_repository import ClasificacionRepository
 from .estado_repository import EstadoRepository
 from .cambio_estado_repository import CambioEstadoRepository
 from .serie_repository import SerieRepository
+from .magnitud_repository import MagnitudRepository
 
 # Modelos de dominio
 from BACKEND.Modelos.EventoSismico import EventoSismico
@@ -21,6 +22,7 @@ from BACKEND.Modelos.DetalleMuestraSismica import DetalleMuestraSismica
 from BACKEND.Modelos.TipoDeDato import TipoDeDato
 from BACKEND.Modelos.CambioEstado import CambioEstado
 from BACKEND.Modelos.Usuario import Usuario
+from BACKEND.Modelos.MagnitudRichter import MagnitudRichter
 
 
 class EventoRepository:
@@ -28,11 +30,36 @@ class EventoRepository:
     def from_domain(db: Session, domain_evento) -> orm_models.EventoSismico:
         """Convierte un EventoSismico del dominio a EventoSismico ORM (campos básicos y relaciones directas)."""
         fecha = domain_evento.getFechaHoraOcurrencia()
-        magn = domain_evento.getValorMagnitud()
-        evento = db.query(orm_models.EventoSismico).filter(
-            orm_models.EventoSismico.fecha_hora_ocurrencia == fecha,
-            orm_models.EventoSismico.valor_magnitud == magn,
-        ).first()
+        # Preferir el objeto MagnitudRichter si está presente en el dominio
+        magn = None
+        try:
+            magn_obj = domain_evento.getMagnitud()
+        except Exception:
+            magn_obj = None
+
+        if magn_obj is not None:
+            try:
+                magn = float(magn_obj.getNumero())
+            except Exception:
+                magn = None
+        else:
+            magn = None
+        # Buscar evento existente por fecha y magnitud (si se dispone)
+        evento = None
+        try:
+            if magn is not None:
+                evento = db.query(orm_models.EventoSismico).join(orm_models.MagnitudRichter).filter(
+                    orm_models.EventoSismico.fecha_hora_ocurrencia == fecha,
+                    orm_models.MagnitudRichter.numero == magn
+                ).first()
+            else:
+                evento = db.query(orm_models.EventoSismico).filter(
+                    orm_models.EventoSismico.fecha_hora_ocurrencia == fecha
+                ).first()
+        except Exception:
+            evento = db.query(orm_models.EventoSismico).filter(
+                orm_models.EventoSismico.fecha_hora_ocurrencia == fecha
+            ).first()
         if not evento:
             evento = orm_models.EventoSismico(
                 fecha_hora_ocurrencia=fecha,
@@ -41,7 +68,6 @@ class EventoRepository:
                 longitud_epicentro=domain_evento.getLongitudEpicentro(),
                 latitud_hipocentro=domain_evento.getLatitudHipocentro(),
                 longitud_hipocentro=domain_evento.getLongitudHipocentro(),
-                valor_magnitud=magn,
             )
             db.add(evento)
             # No hacer flush aquí - dejar que el commit de la unit_of_work lo maneje
@@ -90,6 +116,33 @@ class EventoRepository:
             if serie_orm not in evento.serie_temporal:
                 evento.serie_temporal.append(serie_orm)
 
+        # Asociar/crear MagnitudRichter ORM si está disponible en el dominio o como número
+        try:
+            magn_dom = None
+            try:
+                magn_dom = domain_evento.getMagnitud()
+            except Exception:
+                magn_dom = None
+
+            if magn_dom is not None:
+                orm_magn = MagnitudRepository.from_domain(db, magn_dom)
+                orm_magn.eventos.append(evento)
+            elif magn is not None:
+                # Construir un objeto de dominio MagnitudRichter a partir del número
+                # y delegar siempre a from_domain para mantener consistencia
+                try:
+                    magn_dom_num = MagnitudRichter(None, magn)
+                    orm_m = MagnitudRepository.from_domain(db, magn_dom_num)
+                    if orm_m is not None:
+                        # Vincular la magnitud ORM al evento
+                        evento.magnitud = orm_m
+                except Exception:
+                    # si falla la construcción/consulta, no interrumpir el flujo
+                    pass
+        except Exception:
+            # no interrumpir el flujo si falla la asociación de magnitud
+            pass
+
         return evento
 
     @staticmethod
@@ -127,7 +180,7 @@ class EventoRepository:
         # Estado actual
         estado = None
         if orm_event.estado_actual:
-            estado = Estado(orm_event.estado_actual.nombre_estado, orm_event.estado_actual.ambito)
+            estado = Estado.from_name(orm_event.estado_actual.nombre_estado, orm_event.estado_actual.ambito)
 
         # Cambios de estado
         cambios = []
@@ -138,7 +191,7 @@ class EventoRepository:
             
             estado_ce = None
             if ce.estado:
-                estado_ce = Estado(ce.estado.nombre_estado, ce.estado.ambito)
+                estado_ce = Estado.from_name(ce.estado.nombre_estado, ce.estado.ambito)
             
             cambios.append(CambioEstado(ce.fecha_hora_inicio, estado_ce, usuario_dom))
 
@@ -159,7 +212,7 @@ class EventoRepository:
 
             estado_s = None
             if s.estado:
-                estado_s = Estado(s.estado.nombre_estado, s.estado.ambito)
+                estado_s = Estado.from_name(s.estado.nombre_estado, s.estado.ambito)
 
             serie_dom = SerieTemporal(s.fecha_hora_inicio_registro_muestras,
                                       s.fecha_hora_registro,
@@ -170,13 +223,21 @@ class EventoRepository:
                                       []) # Asumo que el último parámetro es para algo que se llena después
             series_dom.append(serie_dom)
 
+        # Preparar objeto MagnitudRichter de dominio si existe en ORM
+        magn_dom_obj = None
+        if getattr(orm_event, 'magnitud', None) is not None:
+            try:
+                magn_dom_obj = MagnitudRichter(orm_event.magnitud.descripcion, orm_event.magnitud.numero)
+            except Exception:
+                magn_dom_obj = None
+
         evento_dom = EventoSismico(
             fechaHoraOcurrencia=orm_event.fecha_hora_ocurrencia,
             latitudEpicentro=orm_event.latitud_epicentro,
             longitudEpicentro=orm_event.longitud_epicentro,
             latitudHipocentro=orm_event.latitud_hipocentro,
             longitudHipocentro=orm_event.longitud_hipocentro,
-            valorMagnitud=orm_event.valor_magnitud,
+            magnitud=magn_dom_obj,
             origenGeneracion=origen,
             estadoActual=estado,
             cambiosEstado=cambios,
@@ -184,6 +245,7 @@ class EventoRepository:
             alcanceSismo=alcance,
             serieTemporal=series_dom
         )
+        # magnitud ya asignada en el constructor cuando existía en ORM
         # Asignar campos adicionales después de la creación
         evento_dom.id_evento = orm_event.id
         if orm_event.fecha_hora_fin:

@@ -83,6 +83,15 @@ class ClasificacionSismo(Base):
     eventos = relationship('EventoSismico', back_populates='clasificacion')
 
 
+class MagnitudRichter(Base):
+    __tablename__ = 'magnitud_richter'
+    id = Column(Integer, primary_key=True)
+    descripcion = Column(String(200))
+    numero = Column(Float)
+
+    eventos = relationship('EventoSismico', back_populates='magnitud')
+
+
 class EventoSismico(Base):
     __tablename__ = 'evento_sismico'
     id = Column(Integer, primary_key=True)
@@ -92,7 +101,8 @@ class EventoSismico(Base):
     longitud_epicentro = Column(Float)
     latitud_hipocentro = Column(Float)
     longitud_hipocentro = Column(Float)
-    valor_magnitud = Column(Float)
+    # ahora la magnitud se persiste como una relación a MagnitudRichter
+    magnitud_id = Column(Integer, ForeignKey('magnitud_richter.id'))
 
     origen_id = Column(Integer, ForeignKey('origen_de_generacion.id'))
     alcance_id = Column(Integer, ForeignKey('alcance_sismo.id'))
@@ -103,6 +113,7 @@ class EventoSismico(Base):
     alcance = relationship('AlcanceSismo', back_populates='eventos')
     clasificacion = relationship('ClasificacionSismo', back_populates='eventos')
     estado_actual = relationship('Estado', back_populates='eventos')
+    magnitud = relationship('MagnitudRichter', back_populates='eventos')
 
     serie_temporal = relationship('SerieTemporal', back_populates='evento', cascade='all, delete-orphan')
     cambios_estado = relationship('CambioEstado', back_populates='evento', cascade='all, delete-orphan')

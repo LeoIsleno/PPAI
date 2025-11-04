@@ -16,13 +16,13 @@ class SismografoRepository:
     @staticmethod
     def to_domain(orm_s):
         # mapping to domain Sismografo
-        from Modelos.Sismografo import Sismografo
-        from Modelos.EstacionSismologica import EstacionSismologica
-        from Modelos.SerieTemporal import SerieTemporal
-        from Modelos.MuestraSismica import MuestraSismica
-        from Modelos.DetalleMuestraSismica import DetalleMuestraSismica
-        from Modelos.TipoDeDato import TipoDeDato
-        from Modelos.Estado import Estado
+        from BACKEND.Modelos.Sismografo import Sismografo
+        from BACKEND.Modelos.EstacionSismologica import EstacionSismologica
+        from BACKEND.Modelos.SerieTemporal import SerieTemporal
+        from BACKEND.Modelos.MuestraSismica import MuestraSismica
+        from BACKEND.Modelos.DetalleMuestraSismica import DetalleMuestraSismica
+        from BACKEND.Modelos.TipoDeDato import TipoDeDato
+        from BACKEND.Modelos.Estado import Estado
 
         estacion_dom = None
         if orm_s.estacion:
@@ -51,7 +51,7 @@ class SismografoRepository:
 
             estado_s = None
             if s.estado:
-                estado_s = Estado(s.estado.nombre_estado, s.estado.ambito)
+                estado_s = Estado.from_name(s.estado.nombre_estado, s.estado.ambito)
 
             serie_dom = SerieTemporal(s.fecha_hora_inicio_registro_muestras,
                                       s.fecha_hora_registro,

@@ -35,7 +35,8 @@ class PantallaRevisionManual {
             } else {
                 mensaje.classList.add('d-none');
                 eventos.forEach(evento => {
-                    const texto = `${evento[0]} | Magnitud: ${evento[5]} | Epicentro: (${evento[1]}, ${evento[2]}) | Hipocentro: (${evento[3]}, ${evento[4]})`;
+                    const mag = evento[5] && evento[5].numero ? evento[5].numero : 'No disponible';
+                    const texto = `${evento[0]} | Magnitud: ${mag} | Epicentro: (${evento[1]}, ${evento[2]}) | Hipocentro: (${evento[3]}, ${evento[4]})`;
                     const option = document.createElement('option');
                     option.value = JSON.stringify(evento);
                     option.textContent = texto;
@@ -122,7 +123,9 @@ class PantallaRevisionManual {
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-muted mb-3">Datos Técnicos</h6>
-                            <p><strong>Magnitud:</strong> ${evento.valorMagnitud || 'No disponible'}</p>
+                            <p><strong>Magnitud:</strong> ${
+                                (evento.magnitud && evento.magnitud.numero) || 'No disponible'
+                            }</p>
                             <p><strong>Fecha/Hora:</strong> ${evento.fechaHoraOcurrencia || 'No disponible'}</p>
                             <p><strong>Epicentro:</strong> (${evento.latitudEpicentro || '?'}, ${evento.longitudEpicentro || '?'})</p>
                             <p><strong>Hipocentro:</strong> (${evento.latitudHipocentro || '?'}, ${evento.longitudHipocentro || '?'})</p>
@@ -132,7 +135,8 @@ class PantallaRevisionManual {
             </div>
         `;
         // Llenar los inputs del formulario de modificación
-        document.getElementById('inputMagnitud').value = evento.valorMagnitud || '';
+    // Preferir el objeto magnitud si existe
+    document.getElementById('inputMagnitud').value = (evento.magnitud && evento.magnitud.numero) || '';
         // Llenar selects de alcance y origen con el valor actual
         if (alcance && origenSismico) {
             window.ultimosAlcances = alcance;
@@ -272,22 +276,22 @@ class PantallaRevisionManual {
     }
     
     pedirOpcionModificarDatos() {
-        const valorMagnitud = document.getElementById('inputMagnitud');
+        const inputMagnitud = document.getElementById('inputMagnitud');
         const alcanceSismo = document.getElementById('inputAlcance');
         const origenGeneracion = document.getElementById('inputOrigen');
-        this.cboValorMagnitud = valorMagnitud;
+        this.cboValorMagnitud = inputMagnitud;
         this.cboAlcanceSismo = alcanceSismo;
         this.cboOrigenGeneracion = origenGeneracion;
     }
 
     async tomarOpcionModificacionDatos() {
-        const valorMagnitud = this.cboValorMagnitud.value;
+        const magnitud = this.cboValorMagnitud.value;
         const alcanceSismo = this.cboAlcanceSismo.value;
         const origenGeneracion = this.cboOrigenGeneracion.value;
         await fetch(`${API_BASE}/modificar_datos_evento`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ valorMagnitud, alcanceSismo, origenGeneracion })
+            body: JSON.stringify({ magnitud, alcanceSismo, origenGeneracion })
         })
         .then(r => r.json())
         .then(data => {
@@ -305,7 +309,13 @@ class PantallaRevisionManual {
                 }, 5000);
                 // Actualizar los datos mostrados en pantalla sin recargar
                 if (window.eventoActual) {
-                    window.eventoActual.valorMagnitud = valorMagnitud;
+                    // Actualizar el objeto magnitud (no usamos el campo legacy valorMagnitud)
+                    const numVal = parseFloat(magnitud) || null;
+                    if (window.eventoActual.magnitud) {
+                        window.eventoActual.magnitud.numero = numVal;
+                    } else {
+                        window.eventoActual.magnitud = { numero: numVal, descripcion: null };
+                    }
                     window.eventoActual.alcanceSismo = alcanceSismo;
                     window.eventoActual.origenGeneracion = origenGeneracion;
                     // Actualizar también en sessionStorage
