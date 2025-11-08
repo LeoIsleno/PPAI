@@ -17,11 +17,11 @@ from BACKEND.Modelos.Rol import Rol
 from BACKEND.Modelos.Sesion import Sesion
 from BDD import database
 
-# Configuración del usuario logueado
+# Usuario de prueba
 usuario = Usuario('nico', '123', datetime(2025, 1, 1))
 rol_admin = Rol('Administrador de Sismos', 'Rol con permisos para revisar eventos sísmicos')
-empleado_nico = Empleado('Nico', 'Apellido', 'nico@example.com', '123456789', rol_admin)
-usuario.setEmpleado(empleado_nico)
+empleado = Empleado('Nico', 'Apellido', 'nico@example.com', '123456789', rol_admin)
+usuario.setEmpleado(empleado)
 usuario_logueado = Sesion(datetime(2024, 1, 1), datetime(2026, 12, 31), usuario)
 
 app = Flask(__name__, static_folder='../FRONTEND/static')
@@ -29,82 +29,94 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 gestor = GestorRevisionManual()
 
-# Inicializar base de datos y cargar datos
+# Inicializar datos
 try:
     database.init_db()
 except Exception:
     pass
 
+sismografos_persistentes = []
 try:
-    sismografos_provider = ListaSismografos(usuario)
-    sismografos_persistentes = getattr(sismografos_provider, 'sismografos', []) or []
+    provider = ListaSismografos(usuario)
+    sismografos_persistentes = getattr(provider, 'sismografos', []) or []
 except Exception:
-    sismografos_persistentes = []
+    pass
 
+eventos_persistentes = []
 try:
     eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos(sismografos_persistentes, usuario)
 except Exception:
-    eventos_persistentes = []
+    pass
 
+lista_alcances = []
 try:
     lista_alcances = ListarEventosSismicos.obtener_alcances()
 except Exception:
-    lista_alcances = []
+    pass
 
+lista_origenes = []
 try:
     lista_origenes = ListarEventosSismicos.obtener_origenes()
 except Exception:
-    lista_origenes = []
+    pass
 
+estados = []
 try:
     estados = ListarEventosSismicos.obtener_estados()
 except Exception:
-    estados = []
+    pass
 
 @app.route('/eventos', methods=['POST'])
 def seleccionar_evento():
     try:
         data = request.get_json()
-        resultado = gestor.tomarSeleccionDeEventoSismico(eventos_persistentes, sismografos_persistentes, data, usuario_logueado, estados)
+        resultado = gestor.tomarSeleccionDeEventoSismico(
+            eventos_persistentes,
+            sismografos_persistentes,
+            data,
+            usuario_logueado,
+            estados
+        )
         
         if isinstance(resultado, dict) and not resultado.get('success', True):
-            status_code = resultado.pop('status_code', 500)
-            return jsonify(resultado), status_code
+            status = resultado.pop('status_code', 500)
+            return jsonify(resultado), status
         
-        if isinstance(resultado, tuple):
-            datos_evento, series_temporales = resultado
-        else:
-            return jsonify({'success': False, 'error': 'Error inesperado al seleccionar evento'}), 500
+        if not isinstance(resultado, tuple):
+            return jsonify({'success': False, 'error': 'Error inesperado'}), 500
         
-        alcances_sismo = ["Local", "Regional", "Global"]
-        origenes_generacion = ["Tectónico", "Volcánico", "Artificial"]
-
+        datos_evento, series_temporales = resultado
+        
         return jsonify({
             'success': True,
             'evento': datos_evento,
             'series_temporales': series_temporales,
-            'alcances_sismo': alcances_sismo,
-            'origenes_generacion': origenes_generacion
+            'alcances_sismo': ["Local", "Regional", "Global"],
+            'origenes_generacion': ["Tectónico", "Volcánico", "Artificial"]
         })
     except Exception as e:
-        print(f"ERROR en seleccionar_evento: {str(e)}")
+        print(f"ERROR: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Error del servidor: {str(e)}'}), 500
-    
 
 @app.route('/api/eventos', methods=['GET'])
 def api_eventos():
-    result = gestor.opRegistrarResultadoRevisionManual(eventos_persistentes)
-    return jsonify(result)
+    resultado = gestor.opRegistrarResultadoRevisionManual(eventos_persistentes)
+    return jsonify(resultado)
 
 @app.route('/modificar_datos_evento', methods=['POST'])
 def modificar_datos_evento():
-    resultado = gestor.tomarOpcionModificacionDatos(request, lista_alcances, eventos_persistentes, lista_origenes)
+    resultado = gestor.tomarOpcionModificacionDatos(
+        request,
+        lista_alcances,
+        eventos_persistentes,
+        lista_origenes
+    )
     
     if isinstance(resultado, dict) and not resultado.get('success', True):
-        status_code = resultado.pop('status_code', 500)
-        return jsonify(resultado), status_code
+        status = resultado.pop('status_code', 500)
+        return jsonify(resultado), status
     
     return jsonify(resultado)
 
@@ -114,18 +126,21 @@ def ejecutar_accion():
     resultado = gestor.tomarSeleccionOpcionEvento(data, estados)
     
     if isinstance(resultado, dict) and not resultado.get('success', True):
-        status_code = resultado.pop('status_code', 500)
-        return jsonify(resultado), status_code
+        status = resultado.pop('status_code', 500)
+        return jsonify(resultado), status
     
     return jsonify(resultado)
 
 @app.route('/mapa', methods=['GET'])
 def mapa():
-    msj = gestor.tomarSeleccionDeOpcionMapa()
-    return jsonify(msj)
+    return jsonify(gestor.tomarSeleccionDeOpcionMapa())
 
 @app.route('/')
 def index():
+    return send_from_directory('../FRONTEND', 'login.html')
+
+@app.route('/index.html')
+def dashboard():
     return send_from_directory('../FRONTEND', 'index.html')
 
 @app.route('/<path:filename>')

@@ -100,9 +100,15 @@ class ListarEventosSismicos:
             orms = EstadoRepository.list_all(db) or []
             for e in orms:
                 try:
-                    resultados.append(EstadoDom(e.nombre_estado, e.ambito))
+                    # Usar fábrica from_name para crear instancia concreta
+                    estado = EstadoDom.from_name(e.nombre_estado, e.ambito)
+                    resultados.append(estado)
                 except Exception:
-                    resultados.append(EstadoDom(getattr(e, "nombre_estado", None), getattr(e, "ambito", None)))
+                    # Fallback con getattr
+                    nombre = getattr(e, "nombre_estado", None)
+                    ambito = getattr(e, "ambito", None)
+                    estado = EstadoDom.from_name(nombre, ambito)
+                    resultados.append(estado)
         except Exception:
             logger.exception("Error al obtener estados desde la base de datos.")
             raise

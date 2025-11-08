@@ -1,93 +1,384 @@
-# PPAI
+# PPAI - Sistema de Gestión de Eventos Sísmicos# PPAI - Sistema de Gestión de Eventos Sísmicos# PPAI
 
 
 
-## Getting started
+Sistema de gestión y monitoreo de eventos sísmicos con detección automática, revisión manual y análisis de datos sísmicos.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
-## Add your files
+## 🌟 CaracterísticasSistema de gestión y monitoreo de eventos sísmicos con detección automática, revisión manual y análisis de datos sísmicos.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+
+
+- **Sistema de Autenticación**: Login seguro con sesión persistente
+
+- **Detección Automática** de eventos sísmicos
+
+- **Revisión Manual** por analistas especializados## Estructura del Proyecto## Getting started
+
+- **Gestión de Estados** con patrón State (10 estados)
+
+- **Registro de Cambios** con trazabilidad completa
+
+- **Control de Usuarios** con roles y permisos
+
+- **Interfaz Moderna**: Diseño responsivo con paleta de colores profesional```To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+
+
+
+## 📁 Estructura del ProyectoPPAI/
+
+
+
+```├── BACKEND/           # Lógica de negocio y modelos de dominioAlready a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+
+PPAI/
+
+├── BACKEND/           # Lógica de negocio y modelos de dominio│   ├── Modelos/       # Modelos del dominio
+
+│   ├── Modelos/       # Modelos del dominio
+
+│   │   └── estados/   # Estados concretos del sistema (patrón State)│   │   └── estados/   # Estados concretos del sistema (patrón State)```bash
+
+│   ├── GestorRevisionManual.py
+
+│   ├── ListaEventosSismicos.py│   ├── GestorRevisionManual.py# Clonar el repositorio
+
+│   └── Routes.py
+
+├── BDD/               # Capa de persistencia y base de datos│   ├── ListaEventosSismicos.pygit clone https://labsys.frc.utn.edu.ar/gitlab/melo401860/ppai.git
+
+│   ├── repositories/  # Repositorios para acceso a datos
+
+│   ├── orm_models.py  # Modelos ORM (SQLAlchemy)│   └── Routes.pycd ppai
+
+│   └── database.py    # Configuración de BD
+
+└── FRONTEND/          # Interfaz de usuario├── BDD/               # Capa de persistencia y base de datos
+
+    ├── static/        # JavaScript y CSS
+
+    ├── login.html     # Página de inicio de sesión│   ├── repositories/  # Repositorios para acceso a datos# Instalar dependencias (si tienes requirements.txt)
+
+    ├── index.html     # Dashboard principal
+
+    └── *.html         # Otras páginas│   ├── orm_models.py  # Modelos ORM (SQLAlchemy)pip install -r requirements.txt
 
 ```
-cd existing_repo
-git remote add origin https://labsys.frc.utn.edu.ar/gitlab/melo401860/ppai.git
-git branch -M main
-git push -uf origin main
+
+│   └── database.py    # Configuración de BD
+
+## 🎨 Diseño de Interfaz
+
+└── FRONTEND/          # Interfaz de usuario# Inicializar la base de datos
+
+### Paleta de Colores
+
+- **Azul Profundo** (`#1a237e`): Estabilidad y confiabilidad    ├── static/        # JavaScriptpython -c "from BDD.database import init_db; init_db()"
+
+- **Azul Índigo** (`#283593`): Color principal del sistema
+
+- **Verde Azulado** (`#00897b`): Monitoreo activo    └── *.html         # Páginas HTML```
+
+- **Naranja** (`#f57c00`): Alertas y advertencias
+
+- **Rojo** (`#c62828`): Eventos críticos```
+
+- **Verde** (`#2e7d32`): Confirmaciones
+
+## Uso
+
+Ver documentación completa de diseño en [`FRONTEND/DESIGN.md`](FRONTEND/DESIGN.md)
+
+## Características Principales
+
+## 🔐 Estados del Sistema
+
+### Iniciar el Backend
+
+El sistema implementa 10 estados para el ciclo de vida de eventos sísmicos:
+
+- **Detección Automática** de eventos sísmicos
+
+1. **Auto-detectado** - Evento detectado automáticamente
+
+2. **Auto-confirmado** - Evento confirmado automáticamente- **Revisión Manual** por analistas especializados```bash
+
+3. **Pendiente de Cierre** - Esperando cierre
+
+4. **Derivado** - Derivado a otra instancia- **Gestión de Estados** con patrón State (10 estados)cd BACKEND
+
+5. **Confirmado por Personal** - Confirmado manualmente
+
+6. **Cerrado** - Estado final cerrado- **Registro de Cambios** con trazabilidad completapython Routes.py
+
+7. **Rechazado** - Rechazado por analista
+
+8. **Bloqueado en Revisión** - Bloqueado para revisión- **Control de Usuarios** con roles y permisos```
+
+9. **Pendiente de Revisión** - Esperando revisión
+
+10. **Sin Revisión** - Sin revisión, anulado
+
+
+
+> Ver documentación completa en `BACKEND/Modelos/estados/README.md`## Estados del Sistema### Acceder a la Interfaz Web
+
+
+
+## ⚙️ Requisitos
+
+
+
+- Python 3.8+El sistema implementa 10 estados para el ciclo de vida de eventos sísmicos:Abrir en el navegador: `http://localhost:5000`
+
+- SQLAlchemy
+
+- Flask (para el backend API)
+
+
+
+## 🚀 Instalación1. **Auto-detectado** - Evento detectado automáticamente## Arquitectura
+
+
+
+```bash2. **Auto-confirmado** - Evento confirmado automáticamente
+
+# Clonar el repositorio
+
+git clone https://labsys.frc.utn.edu.ar/gitlab/melo401860/ppai.git3. **Pendiente de Cierre** - Esperando cierre### Patrón de Diseño: State
+
+cd ppai
+
+4. **Derivado** - Derivado a otra instancia
+
+# Instalar dependencias (si tienes requirements.txt)
+
+pip install -r requirements.txt5. **Confirmado por Personal** - Confirmado manualmenteEl sistema utiliza el patrón State para gestionar el ciclo de vida de los eventos sísmicos. Cada estado concreto implementa su propia lógica de transición.
+
+
+
+# Inicializar la base de datos6. **Cerrado** - Estado final cerrado
+
+python -c "from BDD.database import init_db; init_db()"
+
+```7. **Rechazado** - Rechazado por analista**Ejemplo de uso:**
+
+
+
+## 💻 Uso8. **Bloqueado en Revisión** - Bloqueado para revisión
+
+
+
+### Iniciar el Backend9. **Pendiente de Revisión** - Esperando revisión```python
+
+
+
+```bash10. **Sin Revisión** - Sin revisión, anuladofrom BACKEND.Modelos.Estado import Estado
+
+cd BACKEND
+
+python Routes.pyfrom BACKEND.Modelos.estados import AutoDetectado, BloqueadoEnRevision
+
 ```
 
-## Integrate with your tools
+> Ver documentación completa en `BACKEND/Modelos/estados/README.md`
 
-- [ ] [Set up project integrations](https://labsys.frc.utn.edu.ar/gitlab/melo401860/ppai/-/settings/integrations)
+El servidor se iniciará en `http://localhost:5001`
 
-## Collaborate with your team
+# Crear estado
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+### Acceder a la Interfaz Web
 
-## Test and Deploy
+## Requisitosestado = AutoDetectado("EventoSismico")
 
-Use the built-in continuous integration in GitLab.
+1. Abrir en el navegador: `http://localhost:5001`
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+2. Iniciar sesión con las credenciales de prueba:
 
-***
 
-# Editing this README
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+**Credenciales disponibles:**- Python 3.8+# Realizar transición
 
-## Suggestions for a good README
+- **Usuario**: `nico` / **Contraseña**: `123`
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+- **Usuario**: `admin` / **Contraseña**: `admin123`- SQLAlchemynuevo_cambio = evento.bloquear(estado_bloqueado, fecha_actual, usuario)
 
-## Name
-Choose a self-explaining name for your project.
+- **Usuario**: `analista` / **Contraseña**: `analista123`
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+- Flask (para el backend API)```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Navegación del Sistema
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Login (/)## Instalación### Base de Datos
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+  └─> Panel de Control (index.html)
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+       ├─> Registrar Revisión Manual (registrar.html)
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+       │    └─> Datos del Evento (datos_evento.html)
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+       ├─> Visualizar Estadísticas```bash- **ORM:** SQLAlchemy
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+       ├─> Gestionar Alertas
 
-## License
-For open source projects, say how it is licensed.
+       └─> Configuración del Sistema# Clonar el repositorio- **Base de datos:** SQLite (por defecto)
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+```
+
+git clone https://labsys.frc.utn.edu.ar/gitlab/melo401860/ppai.git- **Tablas principales:** 
+
+## 🏗️ Arquitectura
+
+cd ppai  - `evento_sismico` - Eventos sísmicos
+
+### Patrón de Diseño: State
+
+  - `estado` - Estados del sistema
+
+El sistema utiliza el patrón State para gestionar el ciclo de vida de los eventos sísmicos. Cada estado concreto implementa su propia lógica de transición.
+
+# Instalar dependencias (si tienes requirements.txt)  - `cambio_estado` - Historial de cambios
+
+**Ejemplo de uso:**
+
+pip install -r requirements.txt  - `usuario` - Usuarios del sistema
+
+```python
+
+from BACKEND.Modelos.Estado import Estado
+
+from BACKEND.Modelos.estados import AutoDetectado, BloqueadoEnRevision
+
+# Inicializar la base de datos## Documentación Adicional
+
+# Crear estado
+
+estado = AutoDetectado("EventoSismico")python -c "from BDD.database import init_db; init_db()"
+
+
+
+# Realizar transición```- **Estados:** `BACKEND/Modelos/estados/README.md` - Documentación completa de estados
+
+nuevo_cambio = evento.bloquear(estado_bloqueado, fecha_actual, usuario)
+
+```- **Transiciones:** `BACKEND/Modelos/estados/TRANSICIONES.md` - Diagrama de transiciones
+
+
+
+### Patrón Repository## Uso
+
+
+
+Separación entre lógica de negocio y persistencia de datos:## Autores
+
+
+
+```python### Iniciar el Backend
+
+from BDD.repositories.evento_repository import EventoRepository
+
+from BDD.database import SessionLocalProyecto PPAI - UTN FRC
+
+
+
+db = SessionLocal()```bash
+
+evento_orm = EventoRepository.from_domain(db, evento_dominio)
+
+db.commit()cd BACKEND## Licencia
+
+```
+
+python Routes.py
+
+### Base de Datos
+
+```Proyecto académico - UTN Facultad Regional Córdoba
+
+- **ORM:** SQLAlchemy
+
+- **Base de datos:** SQLite (por defecto, configurable)
+
+- **Tablas principales:** ### Acceder a la Interfaz Web
+
+  - `evento_sismico` - Eventos sísmicos
+
+  - `estado` - Estados del sistemaAbrir en el navegador: `http://localhost:5000`
+
+  - `cambio_estado` - Historial de cambios
+
+  - `usuario` - Usuarios del sistema## Arquitectura
+
+  - `empleado` - Datos de empleados
+
+  - `rol` - Roles del sistema### Patrón de Diseño: State
+
+
+
+## 📚 Documentación AdicionalEl sistema utiliza el patrón State para gestionar el ciclo de vida de los eventos sísmicos. Cada estado concreto implementa su propia lógica de transición.
+
+
+
+- **Estados**: `BACKEND/Modelos/estados/README.md` - Documentación completa de estados**Ejemplo de uso:**
+
+- **Transiciones**: `BACKEND/Modelos/estados/TRANSICIONES.md` - Diagrama de transiciones
+
+- **Diseño UI**: `FRONTEND/DESIGN.md` - Guía de diseño de interfaz```python
+
+from BACKEND.Modelos.Estado import Estado
+
+## 🔒 Seguridadfrom BACKEND.Modelos.estados import AutoDetectado, BloqueadoEnRevision
+
+
+
+- Autenticación requerida para todas las páginas (excepto login)# Crear estado
+
+- Sesión con timeout de 24 horasestado = AutoDetectado("EventoSismico")
+
+- Opción de "Recordar sesión"
+
+- Validación de credenciales# Realizar transición
+
+- Protección de rutas en el frontendnuevo_cambio = evento.bloquear(estado_bloqueado, fecha_actual, usuario)
+
+```
+
+## 👥 Autores
+
+### Base de Datos
+
+Proyecto PPAI - UTN FRC
+
+- **ORM:** SQLAlchemy
+
+## 📄 Licencia- **Base de datos:** SQLite (por defecto)
+
+- **Tablas principales:** 
+
+Proyecto académico - UTN Facultad Regional Córdoba  - `evento_sismico` - Eventos sísmicos
+
+  - `estado` - Estados del sistema
+
+---  - `cambio_estado` - Historial de cambios
+
+  - `usuario` - Usuarios del sistema
+
+**Última actualización**: Noviembre 2025
+
+## Documentación Adicional
+
+- **Estados:** `BACKEND/Modelos/estados/README.md` - Documentación completa de estados
+- **Transiciones:** `BACKEND/Modelos/estados/TRANSICIONES.md` - Diagrama de transiciones
+
+## Autores
+
+Proyecto PPAI - UTN FRC
+
+## Licencia
+
+Proyecto académico - UTN Facultad Regional Córdoba

@@ -66,7 +66,9 @@ class SerieTemporal:
         self._estado = estado
 
     def getDatos(self, sismografos):
-        estacion_sismologica = 'nada'
+        # Devolver None cuando no se encuentra la estación para que el frontend
+        # pueda aplicar los fallbacks más claramente.
+        estacion_sismologica = None
 
         muestras_datos = []
         for muestra in self._muestraSismica:

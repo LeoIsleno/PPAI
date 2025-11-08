@@ -50,13 +50,28 @@ class Sismografo:
 
     # Método para agregar una serie temporal
     def sosDeSerieTemporal(self, serieTemporal):
+        # Intent: no confiar en identidad de objetos (se crean instancias distintas
+        # al mapear desde ORM). Comparar por atributos que identifican la serie.
         for serie in self.__seriesTemporales:
-            if serieTemporal == serie:
-                retorno = {
-                    'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
-                    'nombreEstacion': self.__estacionSismologica.getNombre()
-                }
-                return retorno
+            try:
+                # Comparar por fecha de registro cuando esté disponible
+                if hasattr(serie, 'getFechaHoraRegistro') and hasattr(serieTemporal, 'getFechaHoraRegistro'):
+                    if serie.getFechaHoraRegistro() == serieTemporal.getFechaHoraRegistro():
+                        return {
+                            'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
+                            'nombreEstacion': self.__estacionSismologica.getNombre()
+                        }
+
+                # Fallback: comparar por frecuencia de muestreo
+                if hasattr(serie, 'getFrecuenciaMuestreo') and hasattr(serieTemporal, 'getFrecuenciaMuestreo'):
+                    if serie.getFrecuenciaMuestreo() == serieTemporal.getFrecuenciaMuestreo():
+                        return {
+                            'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
+                            'nombreEstacion': self.__estacionSismologica.getNombre()
+                        }
+            except Exception:
+                # Si alguna comparación falla, continuar con la siguiente serie
+                continue
         return None
 
     def getEstado(self):

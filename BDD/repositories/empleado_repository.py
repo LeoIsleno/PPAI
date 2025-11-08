@@ -1,38 +1,33 @@
 from typing import Optional
 from sqlalchemy.orm import Session
-
 from BDD import orm_models
 from .rol_repository import RolRepository
 
 
 class EmpleadoRepository:
     @staticmethod
-    def from_domain(db: Session, domain_emp) -> orm_models.Empleado:
-        """Convierte un Empleado del dominio a Empleado ORM. No hace commit por defecto."""
-        mail = domain_emp.getMail()
-        empleado = None
-        if mail:
-            empleado = db.query(orm_models.Empleado).filter(orm_models.Empleado.mail == mail).first()
-        if empleado:
-            empleado.nombre = domain_emp.getNombre()
-            empleado.apellido = domain_emp.getApellido()
-            empleado.telefono = domain_emp.getTelefono()
+    def from_domain(db: Session, empleado):
+        mail = empleado.getMail()
+        existente = db.query(orm_models.Empleado).filter_by(mail=mail).first() if mail else None
+        
+        if existente:
+            existente.nombre = empleado.getNombre()
+            existente.apellido = empleado.getApellido()
+            existente.telefono = empleado.getTelefono()
         else:
-            empleado = orm_models.Empleado(
-                nombre=domain_emp.getNombre(),
-                apellido=domain_emp.getApellido(),
+            existente = orm_models.Empleado(
+                nombre=empleado.getNombre(),
+                apellido=empleado.getApellido(),
                 mail=mail,
-                telefono=domain_emp.getTelefono(),
+                telefono=empleado.getTelefono()
             )
-            db.add(empleado)
-            # No hacer flush aquí - dejar que el commit de la unit_of_work lo maneje
+            db.add(existente)
 
-        rol_dom = domain_emp.getRol()
-        if rol_dom:
-            rol_orm = RolRepository.get_or_create(db, rol_dom)
-            empleado.rol = rol_orm
+        rol = empleado.getRol()
+        if rol:
+            existente.rol = RolRepository.get_or_create(db, rol)
 
-        return empleado
+        return existente
 
     @staticmethod
     def get_by_id(db: Session, id: int) -> Optional[orm_models.Empleado]:

@@ -5,30 +5,31 @@ from BDD import orm_models
 
 class ClasificacionRepository:
     @staticmethod
-    def from_domain(db: Session, domain_clas) -> orm_models.ClasificacionSismo:
-        nombre = domain_clas.getNombre()
-        clas = db.query(orm_models.ClasificacionSismo).filter(orm_models.ClasificacionSismo.nombre == nombre).first()
-        if clas:
-            clas.km_profundidad_desde = domain_clas.getKmProfundidadDesde()
-            clas.km_profundidad_hasta = domain_clas.getKmProfundidadHasta()
-            return clas
-        clas = orm_models.ClasificacionSismo(
+    def from_domain(db: Session, clasificacion):
+        nombre = clasificacion.getNombre()
+        resultado = db.query(orm_models.ClasificacionSismo).filter_by(nombre=nombre).first()
+        
+        if resultado:
+            resultado.km_profundidad_desde = clasificacion.getKmProfundidadDesde()
+            resultado.km_profundidad_hasta = clasificacion.getKmProfundidadHasta()
+            return resultado
+            
+        nueva = orm_models.ClasificacionSismo(
             nombre=nombre,
-            km_profundidad_desde=domain_clas.getKmProfundidadDesde(),
-            km_profundidad_hasta=domain_clas.getKmProfundidadHasta(),
+            km_profundidad_desde=clasificacion.getKmProfundidadDesde(),
+            km_profundidad_hasta=clasificacion.getKmProfundidadHasta()
         )
-        db.add(clas)
-        # No hacer flush aquí - dejar que el commit de la unit_of_work lo maneje
-        return clas
+        db.add(nueva)
+        return nueva
 
-        @staticmethod
-        def get_by_id(db: Session, id: int) -> Optional[orm_models.ClasificacionSismo]:
-            return db.query(orm_models.ClasificacionSismo).get(id)
+    @staticmethod
+    def get_by_id(db: Session, id: int) -> Optional[orm_models.ClasificacionSismo]:
+        return db.query(orm_models.ClasificacionSismo).get(id)
 
-        @staticmethod
-        def list_all(db: Session):
-            return db.query(orm_models.ClasificacionSismo).all()
+    @staticmethod
+    def list_all(db: Session):
+        return db.query(orm_models.ClasificacionSismo).all()
 
-        @staticmethod
-        def delete(db: Session, clas: orm_models.ClasificacionSismo):
-            db.delete(clas)
+    @staticmethod
+    def delete(db: Session, clasificacion: orm_models.ClasificacionSismo):
+        db.delete(clasificacion)

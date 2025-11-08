@@ -1,0 +1,680 @@
+/* ========================================
+   Variables de Color - Tema Sísmico
+   ======================================== */
+:root {
+    /* Colores principales - Inspirados en monitoreo sísmico */
+    --primary-dark: #1a237e;        /* Azul profundo - Estabilidad */
+    --primary: #283593;              /* Azul índigo - Principal */
+    --primary-light: #3949ab;        /* Azul claro */
+    
+    --accent: #00897b;               /* Verde azulado - Monitoreo activo */
+    --accent-light: #26a69a;
+    
+    --warning: #f57c00;              /* Naranja - Alertas */
+    --warning-light: #ff9800;
+    
+    --danger: #c62828;               /* Rojo - Eventos críticos */
+    --danger-light: #e53935;
+    
+    --success: #2e7d32;              /* Verde - Confirmación */
+    --success-light: #43a047;
+    
+    /* Neutrales */
+    --dark: #212121;
+    --gray-dark: #424242;
+    --gray: #757575;
+    --gray-light: #e0e0e0;
+    --light: #f5f5f5;
+    --white: #ffffff;
+    
+    /* Gradientes */
+    --gradient-primary: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    --gradient-accent: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    --gradient-earth: linear-gradient(135deg, #1a237e 0%, #004d40 50%, #f57c00 100%);
+    
+    /* Sombras */
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+    --shadow-xl: 0 12px 24px rgba(0,0,0,0.25);
+}
+
+/* ========================================
+   Cards de Información (Info Cards)
+   ======================================== */
+.info-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--gray-light);
+    box-shadow: var(--shadow-sm);
+    height: 100%;
+}
+
+.info-card-title {
+    color: var(--primary-dark);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+}
+
+.info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--light);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item > i {
+    color: var(--accent);
+    font-size: 1.25rem;
+    margin-top: 0.25rem;
+    min-width: 24px;
+}
+
+.info-item > div {
+    flex: 1;
+}
+
+.info-item strong {
+    display: block;
+    color: var(--gray-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.info-item span {
+    color: var(--dark);
+    font-size: 1rem;
+}
+
+.badge-magnitude {
+    display: inline-block;
+    background: var(--gradient-accent);
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+
+/* ========================================
+   Estilos Globales
+   ======================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--light);
+    color: var(--dark);
+    line-height: 1.6;
+}
+
+/* ========================================
+   Página de Login
+   ======================================== */
+.login-body {
+    background: var(--gradient-earth);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+}
+
+.login-body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(0, 137, 123, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(245, 124, 0, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.login-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 3rem;
+    position: relative;
+    z-index: 1;
+}
+
+.login-card {
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-header {
+    background: var(--gradient-primary);
+    color: var(--white);
+    padding: 2.5rem 2rem;
+    text-align: center;
+}
+
+.logo-container {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.logo-container i {
+    font-size: 2.5rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.login-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.login-form {
+    padding: 2rem;
+}
+
+.form-floating > .form-control {
+    border: 2px solid var(--gray-light);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.form-floating > .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(40, 53, 147, 0.1);
+}
+
+.btn-seismic {
+    background: var(--gradient-primary);
+    color: var(--white);
+    border: none;
+    padding: 0.875rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+.btn-seismic:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    background: var(--gradient-accent);
+}
+
+.login-footer {
+    background: var(--light);
+    padding: 1.5rem;
+    text-align: center;
+    border-top: 1px solid var(--gray-light);
+}
+
+.login-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 350px;
+}
+
+.info-card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateX(5px);
+}
+
+.info-card i {
+    font-size: 2rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+}
+
+.info-card h5 {
+    color: var(--primary);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.info-card p {
+    color: var(--gray);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.login-page-footer {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--white);
+    text-align: center;
+    padding: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* ========================================
+   Navbar Mejorado
+   ======================================== */
+.navbar-seismic {
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow);
+    padding: 1rem 0;
+}
+
+.navbar-seismic .navbar-brand {
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-seismic .navbar-brand i {
+    font-size: 1.8rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--white);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================
+   Cards Mejorados
+   ======================================== */
+.card-seismic {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.card-seismic:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-seismic .card-header {
+    background: var(--gradient-primary);
+    color: var(--white);
+    font-weight: 600;
+    padding: 1.25rem;
+    border: none;
+}
+
+.option-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.option-card:hover {
+    border-left-color: var(--accent);
+    background: var(--light);
+}
+
+.option-card .card-body {
+    padding: 1.5rem;
+}
+
+.option-card i.fs-1 {
+    font-size: 2.5rem !important;
+}
+
+/* ========================================
+   Badges de Estado
+   ======================================== */
+.badge-seismic {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.badge-auto-detectado {
+    background: linear-gradient(135deg, #2196f3, #1976d2);
+    color: var(--white);
+}
+
+.badge-bloqueado {
+    background: linear-gradient(135deg, var(--warning), var(--warning-light));
+    color: var(--white);
+}
+
+.badge-confirmado {
+    background: linear-gradient(135deg, var(--success), var(--success-light));
+    color: var(--white);
+}
+
+.badge-rechazado {
+    background: linear-gradient(135deg, var(--danger), var(--danger-light));
+    color: var(--white);
+}
+
+/* ========================================
+   Botones Mejorados
+   ======================================== */
+.btn-primary {
+    background: var(--gradient-primary);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success), var(--success-light));
+    border: none;
+    font-weight: 600;
+}
+
+.btn-accent {
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    border: none;
+    font-weight: 600;
+    color: white;
+}
+
+.btn-accent:hover {
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, var(--warning), var(--warning-light));
+    border: none;
+    font-weight: 600;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger), var(--danger-light));
+    border: none;
+    font-weight: 600;
+}
+
+/* ========================================
+   Alertas Mejoradas
+   ======================================== */
+.alert {
+    border: none;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    color: #01579b;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    color: #1b5e20;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    color: #e65100;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    color: #b71c1c;
+}
+
+/* ========================================
+   Formularios Mejorados
+   ======================================== */
+.form-control, .form-select {
+    border: 2px solid var(--gray-light);
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(40, 53, 147, 0.1);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.5rem;
+}
+
+/* ========================================
+   Tablas Mejoradas
+   ======================================== */
+.table-seismic {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.table-seismic thead {
+    background: var(--gradient-primary);
+    color: var(--white);
+}
+
+.table-seismic tbody tr {
+    transition: background 0.2s ease;
+}
+
+.table-seismic tbody tr:hover {
+    background: var(--light);
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 992px) {
+    .login-container {
+        flex-direction: column;
+    }
+    
+    .login-info {
+        max-width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 576px) {
+    .login-card {
+        border-radius: 0;
+    }
+    
+    .login-info {
+        flex-direction: column;
+    }
+    
+    .login-container {
+        padding: 1rem;
+    }
+}
+
+/* ========================================
+   Animaciones de Carga
+   ======================================== */
+.spinner-seismic {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--gray-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   Mejoras adicionales para badges
+   ======================================== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+.status-badge i {
+    font-size: 1rem;
+}
+
+/* ========================================
+   Iconos animados
+   ======================================== */
+.icon-wave {
+    animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+/* ========================================
+   Mejoras de accesibilidad
+   ======================================== */
+.btn:focus, .form-control:focus, .form-select:focus {
+    outline: 3px solid rgba(40, 53, 147, 0.3);
+    outline-offset: 2px;
+}
+
+/* ========================================
+   Loading states
+   ======================================== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* ========================================
+   Transiciones suaves
+   ======================================== */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-up {
+    animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

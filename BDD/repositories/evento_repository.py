@@ -1,7 +1,6 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 from BDD import orm_models
-
 from .origen_repository import OrigenRepository
 from .alcance_repository import AlcanceRepository
 from .clasificacion_repository import ClasificacionRepository
@@ -9,8 +8,6 @@ from .estado_repository import EstadoRepository
 from .cambio_estado_repository import CambioEstadoRepository
 from .serie_repository import SerieRepository
 from .magnitud_repository import MagnitudRepository
-
-# Modelos de dominio
 from BACKEND.Modelos.EventoSismico import EventoSismico
 from BACKEND.Modelos.Estado import Estado
 from BACKEND.Modelos.ClasificacionSismo import ClasificacionSismo
@@ -27,123 +24,80 @@ from BACKEND.Modelos.MagnitudRichter import MagnitudRichter
 
 class EventoRepository:
     @staticmethod
-    def from_domain(db: Session, domain_evento) -> orm_models.EventoSismico:
-        """Convierte un EventoSismico del dominio a EventoSismico ORM (campos básicos y relaciones directas)."""
-        fecha = domain_evento.getFechaHoraOcurrencia()
-        # Preferir el objeto MagnitudRichter si está presente en el dominio
-        magn = None
-        try:
-            magn_obj = domain_evento.getMagnitud()
-        except Exception:
-            magn_obj = None
+    def from_domain(db: Session, evento):
+        fecha = evento.getFechaHoraOcurrencia()
+        magnitud_num = None
+        
+        magnitud_obj = getattr(evento, 'getMagnitud', lambda: None)()
+        if magnitud_obj:
+            magnitud_num = magnitud_obj.getNumero()
 
-        if magn_obj is not None:
-            try:
-                magn = float(magn_obj.getNumero())
-            except Exception:
-                magn = None
-        else:
-            magn = None
-        # Buscar evento existente por fecha y magnitud (si se dispone)
-        evento = None
-        try:
-            if magn is not None:
-                evento = db.query(orm_models.EventoSismico).join(orm_models.MagnitudRichter).filter(
-                    orm_models.EventoSismico.fecha_hora_ocurrencia == fecha,
-                    orm_models.MagnitudRichter.numero == magn
-                ).first()
-            else:
-                evento = db.query(orm_models.EventoSismico).filter(
-                    orm_models.EventoSismico.fecha_hora_ocurrencia == fecha
-                ).first()
-        except Exception:
-            evento = db.query(orm_models.EventoSismico).filter(
-                orm_models.EventoSismico.fecha_hora_ocurrencia == fecha
+        # Buscar evento existente
+        query = db.query(orm_models.EventoSismico)
+        if magnitud_num:
+            existente = query.join(orm_models.MagnitudRichter).filter(
+                orm_models.EventoSismico.fecha_hora_ocurrencia == fecha,
+                orm_models.MagnitudRichter.numero == magnitud_num
             ).first()
-        if not evento:
-            evento = orm_models.EventoSismico(
+        else:
+            existente = query.filter_by(fecha_hora_ocurrencia=fecha).first()
+
+        if not existente:
+            existente = orm_models.EventoSismico(
                 fecha_hora_ocurrencia=fecha,
-                fecha_hora_fin=domain_evento.getFechaHoraFin(),
-                latitud_epicentro=domain_evento.getLatitudEpicentro(),
-                longitud_epicentro=domain_evento.getLongitudEpicentro(),
-                latitud_hipocentro=domain_evento.getLatitudHipocentro(),
-                longitud_hipocentro=domain_evento.getLongitudHipocentro(),
+                fecha_hora_fin=evento.getFechaHoraFin(),
+                latitud_epicentro=evento.getLatitudEpicentro(),
+                longitud_epicentro=evento.getLongitudEpicentro(),
+                latitud_hipocentro=evento.getLatitudHipocentro(),
+                longitud_hipocentro=evento.getLongitudHipocentro()
             )
-            db.add(evento)
-            # No hacer flush aquí - dejar que el commit de la unit_of_work lo maneje
+            db.add(existente)
 
-        origen_dom = domain_evento.getOrigenGeneracion()
-        if origen_dom:
-            evento.origen = OrigenRepository.from_domain(db, origen_dom)
+        # Relaciones simples
+        origen = evento.getOrigenGeneracion()
+        if origen:
+            existente.origen = OrigenRepository.from_domain(db, origen)
 
-        alcance_dom = domain_evento.getAlcanceSismo()
-        if alcance_dom:
-            evento.alcance = AlcanceRepository.from_domain(db, alcance_dom)
+        alcance = evento.getAlcanceSismo()
+        if alcance:
+            existente.alcance = AlcanceRepository.from_domain(db, alcance)
 
-        clas_dom = domain_evento.getClasificacion()
-        if clas_dom:
-            evento.clasificacion = ClasificacionRepository.from_domain(db, clas_dom)
+        clasificacion = evento.getClasificacion()
+        if clasificacion:
+            existente.clasificacion = ClasificacionRepository.from_domain(db, clasificacion)
 
-        estado_dom = domain_evento.getEstadoActual()
-        if estado_dom:
-            evento.estado_actual = EstadoRepository.from_domain(db, estado_dom)
+        estado = evento.getEstadoActual()
+        if estado:
+            existente.estado_actual = EstadoRepository.from_domain(db, estado)
 
-        # Cambios de estado (si existen en el dominio) -> persistir y vincular
-        cambios_dom = []
-        try:
-            cambios_dom = domain_evento.getCambiosEstado() or []
-        except Exception:
-            cambios_dom = []
+        # Cambios de estado
+        cambios = getattr(evento, 'getCambiosEstado', lambda: [])() or []
+        for cambio in cambios:
+            cambio_orm = CambioEstadoRepository.from_domain(db, cambio)
+            cambio_orm.evento = existente
+            if cambio_orm not in existente.cambios_estado:
+                existente.cambios_estado.append(cambio_orm)
 
-        for cambio_dom in cambios_dom:
-            # crear o mapear el cambio de estado y vincular al evento ORM
-            cambio_orm = CambioEstadoRepository.from_domain(db, cambio_dom)
-            cambio_orm.evento = evento
-            # ensure it's present in evento.cambios_estado collection
-            if cambio_orm not in evento.cambios_estado:
-                evento.cambios_estado.append(cambio_orm)
+        # Series temporales
+        series = getattr(evento, 'getSerieTemporal', lambda: [])() or []
+        for serie in series:
+            serie_orm = SerieRepository.from_domain(db, serie)
+            serie_orm.evento = existente
+            if serie_orm not in existente.serie_temporal:
+                existente.serie_temporal.append(serie_orm)
 
-        # Series temporales (si las hay en el dominio) -> persistir y vincular
-        series_dom = []
-        try:
-            series_dom = domain_evento.getSerieTemporal() or []
-        except Exception:
-            series_dom = []
+        # Magnitud
+        if magnitud_obj:
+            magnitud_orm = MagnitudRepository.from_domain(db, magnitud_obj)
+            if magnitud_orm:
+                magnitud_orm.eventos.append(existente)
+        elif magnitud_num:
+            magnitud_temp = MagnitudRichter(None, magnitud_num)
+            magnitud_orm = MagnitudRepository.from_domain(db, magnitud_temp)
+            if magnitud_orm:
+                existente.magnitud = magnitud_orm
 
-        for serie_dom in series_dom:
-            serie_orm = SerieRepository.from_domain(db, serie_dom)
-            serie_orm.evento = evento
-            if serie_orm not in evento.serie_temporal:
-                evento.serie_temporal.append(serie_orm)
-
-        # Asociar/crear MagnitudRichter ORM si está disponible en el dominio o como número
-        try:
-            magn_dom = None
-            try:
-                magn_dom = domain_evento.getMagnitud()
-            except Exception:
-                magn_dom = None
-
-            if magn_dom is not None:
-                orm_magn = MagnitudRepository.from_domain(db, magn_dom)
-                orm_magn.eventos.append(evento)
-            elif magn is not None:
-                # Construir un objeto de dominio MagnitudRichter a partir del número
-                # y delegar siempre a from_domain para mantener consistencia
-                try:
-                    magn_dom_num = MagnitudRichter(None, magn)
-                    orm_m = MagnitudRepository.from_domain(db, magn_dom_num)
-                    if orm_m is not None:
-                        # Vincular la magnitud ORM al evento
-                        evento.magnitud = orm_m
-                except Exception:
-                    # si falla la construcción/consulta, no interrumpir el flujo
-                    pass
-        except Exception:
-            # no interrumpir el flujo si falla la asociación de magnitud
-            pass
-
-        return evento
+        return existente
 
     @staticmethod
     def get_by_id(db: Session, id: int) -> Optional[orm_models.EventoSismico]:
@@ -158,96 +112,112 @@ class EventoRepository:
         db.delete(evento)
 
     @staticmethod
-    def to_domain(orm_event):
-        """Mapea un EventoSismico ORM a la clase de dominio EventoSismico."""
-        # Origen
+    def to_domain(orm_evento):
         origen = None
-        if orm_event.origen:
-            origen = OrigenDeGeneracion(orm_event.origen.nombre, orm_event.origen.descripcion)
+        if orm_evento.origen:
+            origen = OrigenDeGeneracion(
+                orm_evento.origen.nombre,
+                orm_evento.origen.descripcion
+            )
 
-        # Alcance
         alcance = None
-        if orm_event.alcance:
-            alcance = AlcanceSismo(orm_event.alcance.descripcion, orm_event.alcance.nombre)
+        if orm_evento.alcance:
+            alcance = AlcanceSismo(
+                orm_evento.alcance.descripcion,
+                orm_evento.alcance.nombre
+            )
 
-        # Clasificacion
-        clas = None
-        if orm_event.clasificacion:
-            clas = ClasificacionSismo(orm_event.clasificacion.nombre,
-                                      orm_event.clasificacion.km_profundidad_desde,
-                                      orm_event.clasificacion.km_profundidad_hasta)
+        clasificacion = None
+        if orm_evento.clasificacion:
+            c = orm_evento.clasificacion
+            clasificacion = ClasificacionSismo(
+                c.nombre,
+                c.km_profundidad_desde,
+                c.km_profundidad_hasta
+            )
 
-        # Estado actual
         estado = None
-        if orm_event.estado_actual:
-            estado = Estado.from_name(orm_event.estado_actual.nombre_estado, orm_event.estado_actual.ambito)
+        if orm_evento.estado_actual:
+            estado = Estado.from_name(
+                orm_evento.estado_actual.nombre_estado,
+                orm_evento.estado_actual.ambito
+            )
 
-        # Cambios de estado
         cambios = []
-        for ce in getattr(orm_event, 'cambios_estado', []):
-            usuario_dom = None
+        for ce in orm_evento.cambios_estado or []:
+            usuario = None
             if ce.usuario:
-                usuario_dom = Usuario(ce.usuario.nombre, getattr(ce.usuario, 'contrasena', ''), ce.usuario.fecha_alta, None)
+                usuario = Usuario(
+                    ce.usuario.nombre,
+                    ce.usuario.contrasena,
+                    ce.usuario.fecha_alta,
+                    None
+                )
             
             estado_ce = None
             if ce.estado:
-                estado_ce = Estado.from_name(ce.estado.nombre_estado, ce.estado.ambito)
+                estado_ce = Estado.from_name(
+                    ce.estado.nombre_estado,
+                    ce.estado.ambito
+                )
             
-            cambios.append(CambioEstado(ce.fecha_hora_inicio, estado_ce, usuario_dom))
+            cambios.append(CambioEstado(ce.fecha_hora_inicio, estado_ce, usuario))
 
-        # Series temporales
-        series_dom = []
-        for s in getattr(orm_event, 'serie_temporal', []):
-            muestras_dom = []
-            for m in getattr(s, 'muestras', []):
-                detalles_dom = []
-                for d in getattr(m, 'detalles', []):
-                    tipo_dom = None
+        series = []
+        for s in orm_evento.serie_temporal or []:
+            muestras = []
+            for m in s.muestras or []:
+                detalles = []
+                for d in m.detalles or []:
+                    tipo = None
                     if d.tipo_de_dato:
-                        tipo_dom = TipoDeDato(d.tipo_de_dato.denominacion,
-                                            d.tipo_de_dato.nombre_unidad_medida,
-                                            d.tipo_de_dato.valor_umbral)
-                    detalles_dom.append(DetalleMuestraSismica(d.valor, tipo_dom))
-                muestras_dom.append(MuestraSismica(m.fecha_hora_muestra, detalles_dom))
+                        tipo = TipoDeDato(
+                            d.tipo_de_dato.denominacion,
+                            d.tipo_de_dato.nombre_unidad_medida,
+                            d.tipo_de_dato.valor_umbral
+                        )
+                    detalles.append(DetalleMuestraSismica(d.valor, tipo))
+                muestras.append(MuestraSismica(m.fecha_hora_muestra, detalles))
 
             estado_s = None
             if s.estado:
                 estado_s = Estado.from_name(s.estado.nombre_estado, s.estado.ambito)
 
-            serie_dom = SerieTemporal(s.fecha_hora_inicio_registro_muestras,
-                                      s.fecha_hora_registro,
-                                      s.frecuencia_muestreo,
-                                      s.condicion_alarma,
-                                      muestras_dom, # Pasamos la lista completa
-                                      estado_s,
-                                      []) # Asumo que el último parámetro es para algo que se llena después
-            series_dom.append(serie_dom)
+            serie = SerieTemporal(
+                s.fecha_hora_inicio_registro_muestras,
+                s.fecha_hora_registro,
+                s.frecuencia_muestreo,
+                s.condicion_alarma,
+                muestras,
+                estado_s,
+                []
+            )
+            series.append(serie)
 
-        # Preparar objeto MagnitudRichter de dominio si existe en ORM
-        magn_dom_obj = None
-        if getattr(orm_event, 'magnitud', None) is not None:
-            try:
-                magn_dom_obj = MagnitudRichter(orm_event.magnitud.descripcion, orm_event.magnitud.numero)
-            except Exception:
-                magn_dom_obj = None
+        magnitud = None
+        if orm_evento.magnitud:
+            magnitud = MagnitudRichter(
+                orm_evento.magnitud.descripcion,
+                orm_evento.magnitud.numero
+            )
 
-        evento_dom = EventoSismico(
-            fechaHoraOcurrencia=orm_event.fecha_hora_ocurrencia,
-            latitudEpicentro=orm_event.latitud_epicentro,
-            longitudEpicentro=orm_event.longitud_epicentro,
-            latitudHipocentro=orm_event.latitud_hipocentro,
-            longitudHipocentro=orm_event.longitud_hipocentro,
-            magnitud=magn_dom_obj,
+        evento = EventoSismico(
+            fechaHoraOcurrencia=orm_evento.fecha_hora_ocurrencia,
+            latitudEpicentro=orm_evento.latitud_epicentro,
+            longitudEpicentro=orm_evento.longitud_epicentro,
+            latitudHipocentro=orm_evento.latitud_hipocentro,
+            longitudHipocentro=orm_evento.longitud_hipocentro,
+            magnitud=magnitud,
             origenGeneracion=origen,
             estadoActual=estado,
             cambiosEstado=cambios,
-            clasificacion=clas,
+            clasificacion=clasificacion,
             alcanceSismo=alcance,
-            serieTemporal=series_dom
+            serieTemporal=series
         )
-        # magnitud ya asignada en el constructor cuando existía en ORM
-        # Asignar campos adicionales después de la creación
-        evento_dom.id_evento = orm_event.id
-        if orm_event.fecha_hora_fin:
-            evento_dom.setFechaHoraFin(orm_event.fecha_hora_fin)
-        return evento_dom
+        
+        evento.id_evento = orm_evento.id
+        if orm_evento.fecha_hora_fin:
+            evento.setFechaHoraFin(orm_evento.fecha_hora_fin)
+            
+        return evento

@@ -255,6 +255,12 @@ class EventoSismico:
             raise RuntimeError("Evento sin estado actual: no se puede confirmar")
         return self._estadoActual.confirmar(self, fechaHoraActual, usuario, ult_cambio)
 
+    def derivar(self, estadoDerivado: Estado, fechaHoraActual: datetime, usuario, ult_cambio: CambioEstado = None):
+        """Derivar el evento a experto: delega al objeto Estado si implementa la operación."""
+        if self._estadoActual is None:
+            raise RuntimeError("Evento sin estado actual: no se puede derivar")
+        return self._estadoActual.derivar(self, fechaHoraActual, usuario, ult_cambio)
+
 
         
 

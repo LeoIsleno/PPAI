@@ -1,35 +1,32 @@
 from typing import Optional
 from sqlalchemy.orm import Session
-
 from BDD import orm_models
 
 
 class SerieRepository:
     @staticmethod
-    def from_domain(db: Session, domain_serie) -> orm_models.SerieTemporal:
-        fecha_inicio = domain_serie.getFechaHoraInicioRegistroMuestras()
-        fecha_reg = domain_serie.getFechaHoraRegistro()
-        freq = domain_serie.getFrecuenciaMuestreo()
-        condicion = domain_serie.getCondicionAlarma()
-
-        serie = db.query(orm_models.SerieTemporal).filter(
+    def from_domain(db: Session, serie):
+        fecha_inicio = serie.getFechaHoraInicioRegistroMuestras()
+        frecuencia = serie.getFrecuenciaMuestreo()
+        
+        existente = db.query(orm_models.SerieTemporal).filter(
             orm_models.SerieTemporal.fecha_hora_inicio_registro_muestras == fecha_inicio,
-            orm_models.SerieTemporal.frecuencia_muestreo == freq,
+            orm_models.SerieTemporal.frecuencia_muestreo == frecuencia
         ).first()
-        if serie:
-            serie.fecha_hora_registro = fecha_reg
-            serie.condicion_alarma = condicion
-            return serie
+        
+        if existente:
+            existente.fecha_hora_registro = serie.getFechaHoraRegistro()
+            existente.condicion_alarma = serie.getCondicionAlarma()
+            return existente
 
-        serie = orm_models.SerieTemporal(
+        nueva = orm_models.SerieTemporal(
             fecha_hora_inicio_registro_muestras=fecha_inicio,
-            fecha_hora_registro=fecha_reg,
-            frecuencia_muestreo=freq,
-            condicion_alarma=condicion,
+            fecha_hora_registro=serie.getFechaHoraRegistro(),
+            frecuencia_muestreo=frecuencia,
+            condicion_alarma=serie.getCondicionAlarma()
         )
-        db.add(serie)
-        # No hacer flush aquí - dejar que el commit de la unit_of_work lo maneje
-        return serie
+        db.add(nueva)
+        return nueva
 
     @staticmethod
     def get_by_id(db: Session, id: int) -> Optional[orm_models.SerieTemporal]:

@@ -4,7 +4,6 @@ from Modelos.EventoSismico import EventoSismico
 from Modelos.Sismografo import Sismografo
 from Modelos.Sesion import Sesion
 from Modelos.MagnitudRichter import MagnitudRichter
-
 from BDD.database import SessionLocal
 from BDD.repositories.evento_repository import EventoRepository
 
@@ -16,7 +15,6 @@ class GestorRevisionManual:
         self.__opcionModificacionDatosSeleccionada = None
         self.__opcionEventoSeleccionada = None
         self._usuarioLogueado = None
-
 
     def opRegistrarResultadoRevisionManual(self, eventos):
         eventos_auto_det = self.buscarEventosAutoDetectados(eventos)
@@ -106,6 +104,20 @@ class GestorRevisionManual:
                 return estado
         return None
 
+    def obtenerEstadoConformado(self, estados):
+        """Busca el estado ConfirmadoPorPersonal en la lista de estados"""
+        for estado in estados:
+            if estado.esAmbitoEventoSismico() and estado.esConfirmadoPorPersonal():
+                return estado
+        return None
+
+    def obtenerEstadoDerivado(self, estados):
+        """Busca el estado Derivado en la lista de estados"""
+        for estado in estados:
+            if estado.esAmbitoEventoSismico() and estado.esDerivado():
+                return estado
+        return None
+
     def rechazarEventoSismico(self, evento: EventoSismico, usuario, estado_rechazado, fecha_hora, ult_cambio):
         evento.rechazar(estado_rechazado, fecha_hora, usuario, ult_cambio)
 
@@ -131,6 +143,26 @@ class GestorRevisionManual:
         # Delegar la confirmación al dominio; se espera que esto devuelva/actualice
         # el último cambio y pueda lanzar excepciones en caso de error.
         self.__ultimo_cambio = evento.confirmar(estado_aceptado, fecha_hora, usuario, ult_cambio)
+
+        db = SessionLocal()
+        try:
+            EventoRepository.from_domain(db, evento)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
+        return True
+
+    def derivarEventoSismico(self, evento: EventoSismico, usuario, estado_derivado, fecha_hora, ult_cambio):
+        """
+        Deriva un evento sísmico a experto delegando en el dominio y persistiendo el cambio.
+        Similar a confirmarEventoSismico y rechazarEventoSismico, delega la lógica al
+        dominio (`evento.derivar`) y luego persiste usando EventoRepository.
+        """
+        self.__ultimo_cambio = evento.derivar(estado_derivado, fecha_hora, usuario, ult_cambio)
 
         db = SessionLocal()
         try:
@@ -220,7 +252,7 @@ class GestorRevisionManual:
             self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_rechazado, fec_hora, self.__ultimo_cambio)
             return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
         
-        if accion == 'conformar':
+        elif accion == 'conformar':
             self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
 
             estado_conformado = self.obtenerEstadoConformado(estados)
@@ -232,9 +264,19 @@ class GestorRevisionManual:
             return {'success': True, 'mensaje': 'Evento confirmado correctamente'}
         
         elif accion == 'experto':
-            return {'success': True, 'mensaje': 'Revisión a experto solicitada'}
+            self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
+
+            estado_derivado = self.obtenerEstadoDerivado(estados)
+
+            fec_hora = self.obtenerFechaHoraActual()
+            
+            # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
+            self.derivarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_derivado, fec_hora, self.__ultimo_cambio)
+            return {'success': True, 'mensaje': 'Evento derivado a experto correctamente'}
+        
         else:
             return {'success': False, 'error': 'Acción no válida', 'status_code': 400}
+
         
     def tomarSeleccionDeOpcionMapa(self):
         return '¹aqui mapa¹'

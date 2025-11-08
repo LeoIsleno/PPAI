@@ -108,27 +108,78 @@ class PantallaRevisionManual {
             return;
         }
         datosPrincipales.innerHTML = `
-            <div class="card mb-3">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Información del Evento</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Clasificación y Alcance</h6>
-                            <p><strong>Clasificación:</strong> ${evento.clasificacion || 'No disponible'}</p>
-                            <p><strong>Alcance:</strong> ${evento.alcanceSismo || 'No disponible'}</p>
-                            <p><strong>Descripción:</strong> ${evento.descripcionAlcance || 'No disponible'}</p>
-                            <p><strong>Origen:</strong> ${evento.origenGeneracion || 'No disponible'}</p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h6 class="info-card-title">
+                            <i class="bi bi-diagram-3 me-2"></i>
+                            Clasificación y Alcance
+                        </h6>
+                        <div class="info-item">
+                            <i class="bi bi-tag"></i>
+                            <div>
+                                <strong>Clasificación</strong>
+                                <span>${evento.clasificacion || 'No disponible'}</span>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Datos Técnicos</h6>
-                            <p><strong>Magnitud:</strong> ${
-                                (evento.magnitud && evento.magnitud.numero) || 'No disponible'
-                            }</p>
-                            <p><strong>Fecha/Hora:</strong> ${evento.fechaHoraOcurrencia || 'No disponible'}</p>
-                            <p><strong>Epicentro:</strong> (${evento.latitudEpicentro || '?'}, ${evento.longitudEpicentro || '?'})</p>
-                            <p><strong>Hipocentro:</strong> (${evento.latitudHipocentro || '?'}, ${evento.longitudHipocentro || '?'})</p>
+                        <div class="info-item">
+                            <i class="bi bi-geo-alt"></i>
+                            <div>
+                                <strong>Alcance</strong>
+                                <span>${evento.alcanceSismo || 'No disponible'}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-card-text"></i>
+                            <div>
+                                <strong>Descripción</strong>
+                                <span>${evento.descripcionAlcance || 'No disponible'}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-lightning"></i>
+                            <div>
+                                <strong>Origen</strong>
+                                <span>${evento.origenGeneracion || 'No disponible'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h6 class="info-card-title">
+                            <i class="bi bi-clipboard-data me-2"></i>
+                            Datos Técnicos
+                        </h6>
+                        <div class="info-item">
+                            <i class="bi bi-speedometer"></i>
+                            <div>
+                                <strong>Magnitud</strong>
+                                <span class="badge-magnitude">${
+                                    (evento.magnitud && evento.magnitud.numero) || 'No disponible'
+                                }</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-calendar-event"></i>
+                            <div>
+                                <strong>Fecha/Hora</strong>
+                                <span>${evento.fechaHoraOcurrencia || 'No disponible'}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-pin-map"></i>
+                            <div>
+                                <strong>Epicentro</strong>
+                                <span>(${evento.latitudEpicentro || '?'}, ${evento.longitudEpicentro || '?'})</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-pin-map-fill"></i>
+                            <div>
+                                <strong>Hipocentro</strong>
+                                <span>(${evento.latitudHipocentro || '?'}, ${evento.longitudHipocentro || '?'})</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -173,44 +224,69 @@ class PantallaRevisionManual {
         let html = '';
         const seriesPorEstacion = {};
         seriesTemporales.forEach(serie => {
-            const nombre = serie.estacionSismologica.nombreEstacion;
+            const estacion = serie.estacionSismologica || {};
+            const nombre = estacion.nombreEstacion || 'Estación Desconocida';
             if (!seriesPorEstacion[nombre]) {
-            seriesPorEstacion[nombre] = [];
+                seriesPorEstacion[nombre] = [];
             }
             seriesPorEstacion[nombre].push(serie);
         });
 
         Object.entries(seriesPorEstacion).forEach(([nombreEstacion, series]) => {
-            html += `<div class="card mb-2">
-            <div class="card-header bg-light">
-                <strong>${nombreEstacion} (${series[0].estacionSismologica.codigoEstacion})</strong>
+            const estacion = series[0].estacionSismologica || {};
+            const codigo = estacion.codigoEstacion || 'N/A';
+            
+            html += `<div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header" style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: white;">
+                <strong><i class="bi bi-geo-fill me-2"></i>${nombreEstacion} (${codigo})</strong>
             </div>
             <div class="card-body">`;
 
             series.forEach((serie, idx) => {
-            html += `
-                <div class="mb-3">
-                <span><b>Serie temporal #${idx + 1}</b></span><br>
-                <span><b>Fecha/Hora inicio:</b> ${serie.fechaHoraInicioRegistroMuestras}</span><br>
-                <span><b>Frecuencia de muestreo:</b> ${serie.frecuenciaMuestreo} Hz</span>
-                <h6 class="mt-2 mb-2">Muestras sísmicas:</h6>
-                <ul class="list-group">`;
+                html += `
+                <div class="mb-4 p-3 border-start border-primary border-3" style="background-color: #f8f9fa;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-graph-up text-primary me-2"></i>
+                        <strong style="color: var(--primary-dark);">Serie temporal #${idx + 1}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <i class="bi bi-calendar-event me-2 text-muted"></i>
+                        <strong>Fecha/Hora inicio:</strong> ${serie.fechaHoraInicioRegistroMuestras || 'No disponible'}
+                    </div>
+                    <div class="mb-3">
+                        <i class="bi bi-speedometer2 me-2 text-muted"></i>
+                        <strong>Frecuencia de muestreo:</strong> ${serie.frecuenciaMuestreo || 'N/A'} Hz
+                    </div>
+                    <h6 class="mt-3 mb-2" style="color: var(--primary-dark);">
+                        <i class="bi bi-collection me-2"></i>Muestras sísmicas:
+                    </h6>
+                    <ul class="list-group list-group-flush">`;
             serie.muestras.forEach((muestra, j) => {
-                html += `<li class="list-group-item">
-                <b>Fecha/Hora muestra ${j + 1}:</b> ${muestra.fechaHoraMuestra}<br>
-                <ul style="margin-left: 1em;">`;
-                muestra.detalle.forEach(det => {
+                html += `<li class="list-group-item" style="background-color: white;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-clock-history me-2" style="color: var(--accent);"></i>
+                        <strong>Muestra #${j + 1}:</strong> 
+                        <span class="ms-2 text-muted">${muestra.fechaHoraMuestra || 'No disponible'}</span>
+                    </div>
+                    <ul class="ms-4 mb-0">`;
+                
+                if (muestra.detalle && muestra.detalle.length > 0) {
+                    muestra.detalle.forEach(det => {
+                        const icono = det.tipoDeDato === 'Velocidad de onda' ? 'speedometer' : 
+                                     det.tipoDeDato === 'Frecuencia de onda' ? 'activity' : 'rulers';
+                        const unidad = det.unidad ? ` ${det.unidad}` : '';
+                        html += `
+                        <li class="mb-1">
+                            <i class="bi bi-${icono} me-2" style="color: var(--accent);"></i>
+                            <strong>${det.tipoDeDato || 'Dato'}:</strong> ${det.valor || 'N/A'}${unidad}
+                        </li>`;
+                    });
+                } else {
+                    html += `<li class="text-muted">Sin detalles disponibles</li>`;
+                }
+                
                 html += `
-                    <li style="font-style:italic;">
-                    ${det.tipoDeDato === 'Velocidad de onda' ? '<b>Velocidad de onda:</b>' : ''}
-                    ${det.tipoDeDato === 'Frecuencia de onda' ? '<b>Frecuencia de onda:</b>' : ''}
-                    ${det.tipoDeDato === 'Longitud' ? '<b>Longitud:</b>' : ''}
-                    ${det.valor}
-                    </li>
-                `;
-                });
-                html += `
-                </ul>
+                    </ul>
                 </li>`;
             });
             html += `</ul>
@@ -262,7 +338,11 @@ class PantallaRevisionManual {
     mostrarOpcionMapa(){
         const contenedor = document.getElementById('opcionMapa');
         if (contenedor) {
-            contenedor.innerHTML = `<button id="btnMapa" class="btn btn-info">Ver Mapa</button>`;
+            contenedor.innerHTML = `
+                <button id="btnMapa" class="btn btn-accent mb-3">
+                    <i class="bi bi-map me-2"></i>
+                    Ver Mapa
+                </button>`;
         }
     }
 
