@@ -95,10 +95,8 @@ def seleccionar_evento():
             'origenes_generacion': ["Tectónico", "Volcánico", "Artificial"]
         })
     except Exception as e:
-        print(f"ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': f'Error del servidor: {str(e)}'}), 500
+        # Avoid printing/logging to console. Return a generic error to the caller.
+        return jsonify({'success': False, 'error': 'Error interno del servidor'}), 500
 
 @app.route('/api/eventos', methods=['GET'])
 def api_eventos():

@@ -9,6 +9,13 @@
     <link rel="stylesheet" href="static/styles.css">
 </head>
 <body class="login-body">
+    <!-- Loading overlay (toggle d-none) -->
+    <div id="loadingOverlay" class="loading-overlay d-none" aria-hidden="true">
+        <div class="loading-spinner" role="status" aria-label="Cargando"></div>
+    </div>
+    <!-- Live region for announcements to screen readers -->
+    <div id="liveRegion" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">

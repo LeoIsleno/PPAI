@@ -27,7 +27,7 @@ const pantalla = new PantallaRevisionManual();
         } catch (e) {
             console.error('Error restoring persisted console messages', e);
         }
-        console.debug('scriptDatosEvento: DOMContentLoaded start');
+    // DOMContentLoaded
         // Global guard: block any unexpected form submissions which cause full page reloads.
         document.addEventListener('submit', function(e) {
             try {
@@ -46,7 +46,7 @@ const pantalla = new PantallaRevisionManual();
         const series = sessionStorage.getItem('seriesTemporales');
         const alcanceSismos = sessionStorage.getItem('ultimosAlcances');
         const origenesGeneracion = sessionStorage.getItem('ultimosOrigenes');
-        console.debug('scriptDatosEvento: cargar datos desde sessionStorage', { evento, series, alcanceSismos, origenesGeneracion });
+    // cargar datos desde sessionStorage
         try {
             pantalla.mostrarDatosSismicos(JSON.parse(evento), JSON.parse(series), JSON.parse(alcanceSismos), JSON.parse(origenesGeneracion));
         } catch (e) {
@@ -55,7 +55,8 @@ const pantalla = new PantallaRevisionManual();
         }
         // Debug helper: capture navigation-causing clicks to see what triggers reloads.
         // Set to `true` while debugging to block and log navigations; flip to false to restore normal behavior.
-        const debugBlockNavigation = true;
+    // Disable verbose debug navigation helpers in production usage
+    const debugBlockNavigation = false;
         // Console persistence: wrap console methods to keep messages across reloads in sessionStorage.
         if (debugBlockNavigation) {
             (function() {
@@ -84,9 +85,7 @@ const pantalla = new PantallaRevisionManual();
         }
         // We will NOT attempt to override read-only window.location methods (assign/replace/reload)
         // because many browsers make these properties non-writable and overriding throws.
-        if (debugBlockNavigation) {
-            console.debug('DebugNav: programmatic navigation interception is disabled to avoid errors');
-        }
+        // no-op debug message when disabled
         if (debugBlockNavigation) {
             document.addEventListener('click', function(ev) {
                 try {
@@ -152,7 +151,7 @@ const pantalla = new PantallaRevisionManual();
             const modalTitle = modalEl.querySelector('.modal-title');
             const modalText = modalEl.querySelector('#confirmModalText');
             const confirmBtn = modalEl.querySelector('#confirmActionBtn');
-            console.debug('scriptDatosEvento.showConfirmModal', { actionKey, actionLabel });
+            // show confirm modal
             modalTitle.textContent = actionLabel;
             // Construir un texto más natural: quitar palabra 'evento' si está al final del label
             const labelShort = actionLabel.replace(/\s*evento\s*$/i, '').toLowerCase();
@@ -177,10 +176,9 @@ const pantalla = new PantallaRevisionManual();
             const newConfirm = confirmBtn.cloneNode(true);
             confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
             newConfirm.className = actionBtnClasses[actionKey] || 'btn btn-primary btn-lg';
-            newConfirm.addEventListener('click', (e) => {
+                newConfirm.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.debug('scriptDatosEvento: confirm button clicked for', actionKey);
                 bsModal.hide();
                 pantalla.ejecutarAccion(actionKey);
             });
@@ -189,9 +187,9 @@ const pantalla = new PantallaRevisionManual();
             setTimeout(() => { newConfirm.focus(); }, 200);
         };
 
-    if (btnConfirmar) btnConfirmar.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); console.debug('btnConfirmar clicked'); showConfirmModal('confirmar', 'Confirmar evento'); });
-    if (btnDerivar) btnDerivar.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); console.debug('btnDerivar clicked'); showConfirmModal('experto', 'Derivar a experto'); });
-    if (btnRechazar) btnRechazar.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); console.debug('btnRechazar clicked'); showConfirmModal('rechazar', 'Rechazar evento'); });
+    if (btnConfirmar) btnConfirmar.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); showConfirmModal('confirmar', 'Confirmar evento'); });
+    if (btnDerivar) btnDerivar.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); showConfirmModal('experto', 'Derivar a experto'); });
+    if (btnRechazar) btnRechazar.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); showConfirmModal('rechazar', 'Rechazar evento'); });
     });
 
 

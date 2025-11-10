@@ -4,6 +4,14 @@ from BDD import orm_models
 
 
 class EstadoRepository:
+    """Repository for Estado.
+
+    Important policy: this repository will NOT create new Estado rows automatically.
+    The canonical Estado rows must exist in the database (see `BDD/seed_states.py`).
+    Any attempt to persist a non-canonical Estado will raise a RuntimeError so the
+    caller can handle it explicitly. This prevents accidental proliferation of
+    duplicate Estado rows.
+    """
     @staticmethod
     def from_domain(db: Session, estado):
         # Normalize the state name using the Estado factory so we store a canonical
@@ -27,12 +35,11 @@ class EstadoRepository:
             existente.ambito = estado.getAmbito()
             return existente
 
-        nuevo = orm_models.Estado(
-            nombre_estado=nombre_canonical,
-            ambito=estado.getAmbito()
-        )
-        db.add(nuevo)
-        return nuevo
+        # IMPORTANT: do not create new Estado rows automatically.
+        # The application must use the existing states defined in the DB.
+        # If a canonical match is not found, raise so the caller can decide
+        # how to handle the missing state (avoid silently creating duplicates).
+        raise RuntimeError(f"Estado '{nombre_canonical}' no encontrado en la base de datos. No se crearán nuevos estados automáticamente.")
 
     @staticmethod
     def get_by_id(db: Session, id: int) -> Optional[orm_models.Estado]:

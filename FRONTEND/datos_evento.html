@@ -27,6 +27,13 @@
         </div>
     </nav>
 
+    <!-- Loading overlay (toggleando d-none) -->
+    <div id="loadingOverlay" class="loading-overlay d-none" aria-hidden="true">
+        <div class="loading-spinner" role="status" aria-label="Cargando"></div>
+    </div>
+    <!-- Live region for announcements to screen readers -->
+    <div id="liveRegion" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
     <div class="container mb-5">
         <!-- Datos principales -->
         <div class="card card-seismic mb-4">
@@ -152,9 +159,7 @@
                             </button>
                         </div>
                     </div>
-                    <div class="col-12 mt-3">
-                        <div id="mensajeAccion" class="alert d-none" role="status" aria-live="polite"></div>
-                    </div>
+                    <!-- Inline action message removed: feedback is shown in the result modal -->
                 </div>
                 
                 <div class="mt-3">
@@ -185,6 +190,23 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Resultado visible en modal (mensaje prominente luego de confirmar/rechazar) -->
+    <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" id="resultModalContent">
+                <div class="modal-header" id="resultModalHeader">
+                    <h5 class="modal-title d-flex align-items-center" id="resultModalLabel">
+                        <i id="resultModalIcon" class="bi fs-3 me-2"></i>
+                        <span id="resultModalTitle">Resultado</span>
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p id="resultModalText" class="fs-5 mb-0"></p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="footer py-3">

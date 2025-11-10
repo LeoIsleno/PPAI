@@ -44,7 +44,7 @@ class Usuario(Base):
 class Estado(Base):
     __tablename__ = 'estado'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), nullable=False)
+    # Ensure the canonical state name is unique to avoid accidental duplicates
     ambito = Column(String(200))
 
     cambios_estado = relationship('CambioEstado', back_populates='estado')
