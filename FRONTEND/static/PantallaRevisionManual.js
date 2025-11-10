@@ -1,5 +1,32 @@
 const API_BASE = 'http://127.0.0.1:5001';
 
+// Lightweight inline message helper - reverts to previous inline-alert behavior
+function showInlineMessage(containerId, text, level = 'info', autoHide = false, timeout = 5000) {
+    const el = document.getElementById(containerId);
+    if (!el) {
+        // fallback to native alert if container not present
+        if (level === 'error' || level === 'danger') {
+            alert(text);
+        } else {
+            console.info(text);
+        }
+        return;
+    }
+    // normalize level -> bootstrap alert classes
+    const levelClass = level === 'success' ? 'alert-success'
+                     : (level === 'error' || level === 'danger') ? 'alert-danger'
+                     : (level === 'warning') ? 'alert-warning' : 'alert-info';
+    el.className = `alert ${levelClass}`; // reset classes
+    el.textContent = text;
+    el.classList.remove('d-none');
+    // optional auto hide
+    if (autoHide) {
+        setTimeout(() => {
+            if (el) el.classList.add('d-none');
+        }, timeout);
+    }
+}
+
 class PantallaRevisionManual {
 
     constructor(cboEventoSismicos, btnAccion, cboValorMagnitud, cboAlcanceSismo, cboOrigenGeneracion) {
@@ -8,6 +35,25 @@ class PantallaRevisionManual {
         this.cboValorMagnitud = cboValorMagnitud;
         this.cboAlcanceSismo = cboAlcanceSismo;
         this.cboOrigenGeneracion = cboOrigenGeneracion;
+    }
+
+    // Formatea fecha/hora al estilo local argentino: DD/MM/AAAA HH:MM:SS
+    formatDate(fechaIso) {
+        try {
+            if (!fechaIso) return null;
+            const d = new Date(fechaIso);
+            if (Number.isNaN(d.getTime())) return fechaIso;
+            const pad = (n) => n.toString().padStart(2, '0');
+            const day = pad(d.getDate());
+            const month = pad(d.getMonth() + 1);
+            const year = d.getFullYear();
+            const hours = pad(d.getHours());
+            const minutes = pad(d.getMinutes());
+            const seconds = pad(d.getSeconds());
+            return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+        } catch (e) {
+            return fechaIso;
+        }
     }
 
     async opRegistrarResultadoRevisionManual() {
@@ -164,7 +210,7 @@ class PantallaRevisionManual {
                             <i class="bi bi-calendar-event"></i>
                             <div>
                                 <strong>Fecha/Hora</strong>
-                                <span>${evento.fechaHoraOcurrencia || 'No disponible'}</span>
+                                <span>${this.formatDate(evento.fechaHoraOcurrencia) || 'No disponible'}</span>
                             </div>
                         </div>
                         <div class="info-item">
@@ -251,7 +297,7 @@ class PantallaRevisionManual {
                     </div>
                     <div class="mb-2">
                         <i class="bi bi-calendar-event me-2 text-muted"></i>
-                        <strong>Fecha/Hora inicio:</strong> ${serie.fechaHoraInicioRegistroMuestras || 'No disponible'}
+                        <strong>Fecha/Hora inicio:</strong> ${this.formatDate(serie.fechaHoraInicioRegistroMuestras) || 'No disponible'}
                     </div>
                     <div class="mb-3">
                         <i class="bi bi-speedometer2 me-2 text-muted"></i>
@@ -266,7 +312,7 @@ class PantallaRevisionManual {
                     <div class="d-flex align-items-center mb-2">
                         <i class="bi bi-clock-history me-2" style="color: var(--accent);"></i>
                         <strong>Muestra #${j + 1}:</strong> 
-                        <span class="ms-2 text-muted">${muestra.fechaHoraMuestra || 'No disponible'}</span>
+                        <span class="ms-2 text-muted">${this.formatDate(muestra.fechaHoraMuestra) || 'No disponible'}</span>
                     </div>
                     <ul class="ms-4 mb-0">`;
                 
@@ -302,44 +348,93 @@ class PantallaRevisionManual {
         const accion = document.getElementById('accionEvento')
         this.btnAccion = accion;
     }
-
     tomarSeleccionOpcionEvento() {
-        const accion = this.btnAccion.value;
+        // Mantener compatibilidad con versiones anteriores que usaban un select.
+        const accion = this.btnAccion ? this.btnAccion.value : null;
         if (!accion) {
             alert('Por favor seleccione una acción');
             return;
         }
-        fetch(`${API_BASE}/ejecutar_accion`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accion })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.mensaje || 'Acción ejecutada con éxito');
+        this.ejecutarAccion(accion);
+    }
+
+    async ejecutarAccion(accion) {
+        // Ejecuta la acción indicada para el evento actualmente seleccionado.
+        // Indicador (badge) eliminado; se muestra únicamente feedback mediante el área de mensajes.
+        const mensajeEl = document.getElementById('mensajeAccion');
+        const btnConfirmar = document.getElementById('btnConfirmar');
+        const btnDerivar = document.getElementById('btnDerivar');
+        const btnRechazar = document.getElementById('btnRechazar');
+        try {
+            console.debug('ejecutarAccion called with', accion);
+            // UI optimista: mostrar un mensaje inline mientras se procesa la acción
+            showInlineMessage('mensajeAccion', 'Procesando acción...', 'info', false);
+
+            const body = { accion };
+            console.debug('ejecutarAccion: enviando fetch', { url: `${API_BASE}/ejecutar_accion`, body });
+
+            const response = await fetch(`${API_BASE}/ejecutar_accion`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            console.debug('ejecutarAccion: fetch completed', { ok: response.ok, status: response.status, statusText: response.statusText });
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (parseErr) {
+                console.error('ejecutarAccion: error parsing JSON response', parseErr);
+                // try to read text for debugging
+                try {
+                    const text = await response.text();
+                    console.error('ejecutarAccion: response text:', text);
+                } catch (tErr) {
+                    console.error('ejecutarAccion: error reading response text', tErr);
+                }
+            }
+            console.debug('ejecutarAccion response', data);
+            if (data && data.success) {
+                // Mostrar mensaje en la página y deshabilitar botones de acción
+                showInlineMessage('mensajeAccion', data.mensaje || 'Acción ejecutada con éxito', 'success', true, 5000);
+                // limpiar selección local para evitar doble envío
                 sessionStorage.removeItem('eventoSeleccionado');
                 sessionStorage.removeItem('seriesTemporales');
                 sessionStorage.removeItem('ultimosAlcances');
                 sessionStorage.removeItem('ultimosOrigenes');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 100);
+                if (btnConfirmar) btnConfirmar.disabled = true;
+                if (btnDerivar) btnDerivar.disabled = true;
+                if (btnRechazar) btnRechazar.disabled = true;
+                // NOTE: previously we redirected to index.html after a short delay.
+                // This caused unexpected immediate navigations in some flows. Disable automatic redirect
+                // so the user can see the inline message. If you want to re-enable automatic redirect,
+                // set `autoRedirectToHome = true` globally.
+                try {
+                    const autoRedirectToHome = window.autoRedirectToHome || false;
+                    if (autoRedirectToHome) {
+                        setTimeout(() => {
+                            console.debug('Redirecting to index.html after successful action (autoRedirectToHome=true)');
+                            window.location.href = 'index.html';
+                        }, 5000);
+                    } else {
+                        console.debug('Automatic redirect suppressed (autoRedirectToHome=false)');
+                    }
+                } catch (e) {
+                    console.error('Error checking autoRedirectToHome flag', e);
+                }
             } else {
-                alert(data.error || 'Error al ejecutar la acción');
+                showInlineMessage('mensajeAccion', data && data.error ? data.error : 'Error al ejecutar la acción', 'error', true, 6000);
             }
-        })
-        .catch(error => {
-            console.error('Error en tomarSeleccionOpcionEvento:', error);
-            alert('Error de conexión con el servidor');
-        });
+        } catch (error) {
+            console.error('Error en ejecutarAccion:', error);
+            showInlineMessage('mensajeAccion', 'Error de conexión con el servidor', 'error', true, 6000);
+        }
     }
 
     mostrarOpcionMapa(){
         const contenedor = document.getElementById('opcionMapa');
         if (contenedor) {
             contenedor.innerHTML = `
-                <button id="btnMapa" class="btn btn-accent mb-3">
+                <button type="button" id="btnMapa" class="btn btn-accent mb-3">
                     <i class="bi bi-map me-2"></i>
                     Ver Mapa
                 </button>`;
@@ -368,6 +463,7 @@ class PantallaRevisionManual {
         const magnitud = this.cboValorMagnitud.value;
         const alcanceSismo = this.cboAlcanceSismo.value;
         const origenGeneracion = this.cboOrigenGeneracion.value;
+        console.debug('tomarOpcionModificacionDatos', { magnitud, alcanceSismo, origenGeneracion });
         await fetch(`${API_BASE}/modificar_datos_evento`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -376,17 +472,9 @@ class PantallaRevisionManual {
         .then(r => r.json())
         .then(data => {
             const msg = document.getElementById('mensajeModificacion');
-            if (data.success) {
-                msg.textContent = '✓ Datos modificados correctamente';
-                msg.classList.remove('d-none');
-                msg.classList.remove('alert-danger');
-                msg.classList.add('alert-success');
-                // Hacer scroll al mensaje
-                msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                // Ocultar el mensaje después de 5 segundos
-                setTimeout(() => {
-                    msg.classList.add('d-none');
-                }, 5000);
+                if (data.success) {
+                // Inline message (reverting notify.js usage)
+                showInlineMessage('mensajeModificacion', '✓ Datos modificados correctamente', 'success', true, 5000);
                 // Actualizar los datos mostrados en pantalla sin recargar
                 if (window.eventoActual) {
                     // Actualizar el objeto magnitud (no usamos el campo legacy valorMagnitud)

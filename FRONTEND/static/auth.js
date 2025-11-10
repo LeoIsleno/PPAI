@@ -42,3 +42,7 @@ function logout() {
 
 // Verificar autenticación al cargar la página
 window.addEventListener('DOMContentLoaded', checkAuth);
+
+// Exponer explícitamente la función en el objeto global para que los manejadores
+// inline (onclick="logout()") y otros scripts la encuentren sin ambigüedad.
+window.logout = logout;

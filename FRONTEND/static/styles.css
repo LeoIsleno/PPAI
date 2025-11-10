@@ -411,6 +411,13 @@ body {
     color: var(--white);
 }
 
+/* Hide status/badge elements inside modals only (non-destructive) */
+.modal .status-badge,
+.modal [class^="badge-"],
+.modal [class*=" badge-"] {
+     display: none !important;
+}
+
 .badge-confirmado {
     background: linear-gradient(135deg, var(--success), var(--success-light));
     color: var(--white);
@@ -418,6 +425,12 @@ body {
 
 .badge-rechazado {
     background: linear-gradient(135deg, var(--danger), var(--danger-light));
+    color: var(--white);
+}
+
+/* Badge para eventos derivados a experto */
+.badge-derivado {
+    background: linear-gradient(135deg, var(--warning), var(--warning-light));
     color: var(--white);
 }
 
@@ -521,42 +534,8 @@ body {
     margin-bottom: 0.5rem;
 }
 
-/* ========================================
-   Tablas Mejoradas
-   ======================================== */
-.table-seismic {
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-}
-
-.table-seismic thead {
-    background: var(--gradient-primary);
-    color: var(--white);
-}
-
-.table-seismic tbody tr {
-    transition: background 0.2s ease;
-}
-
-.table-seismic tbody tr:hover {
-    background: var(--light);
-}
-
-/* ========================================
-   Responsive
-   ======================================== */
-@media (max-width: 992px) {
-    .login-container {
-        flex-direction: column;
-    }
-    
-    .login-info {
-        max-width: 100%;
-        flex-direction: row;
-        overflow-x: auto;
-    }
-}
+/* Badges de estado eliminadas: las clases relacionadas con status badges
+    fueron removidas permanentemente para simplificar la UI. */
 
 @media (max-width: 576px) {
     .login-card {
@@ -586,24 +565,6 @@ body {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
-}
-
-/* ========================================
-   Mejoras adicionales para badges
-   ======================================== */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    white-space: nowrap;
-}
-
-.status-badge i {
-    font-size: 1rem;
 }
 
 /* ========================================
@@ -678,3 +639,4 @@ body {
         transform: translateY(0);
     }
 }
+

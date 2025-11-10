@@ -252,7 +252,7 @@ class GestorRevisionManual:
             self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_rechazado, fec_hora, self.__ultimo_cambio)
             return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
         
-        elif accion == 'conformar':
+        elif accion == 'confirmar':
             self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
 
             estado_conformado = self.obtenerEstadoConformado(estados)
