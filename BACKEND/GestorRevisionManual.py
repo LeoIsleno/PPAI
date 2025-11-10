@@ -63,7 +63,7 @@ class GestorRevisionManual:
 
     def llamarCUGenerarSismograma(self, evento: EventoSismico):
         # Simulación de generación de sismograma
-        print(f"Generando sismograma para el evento ID {getattr(evento, 'id_evento', '?')}")
+        # la implementación real no debe imprimir en consola
         return True
 
 

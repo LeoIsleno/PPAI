@@ -1,29 +1,85 @@
 const API_BASE = 'http://127.0.0.1:5001';
 
-// Lightweight inline message helper - reverts to previous inline-alert behavior
-function showInlineMessage(containerId, text, level = 'info', autoHide = false, timeout = 5000) {
-    const el = document.getElementById(containerId);
-    if (!el) {
-        // fallback to native alert if container not present
-        if (level === 'error' || level === 'danger') {
-            alert(text);
-        } else {
-            console.info(text);
-        }
+// Helper to show a colored modal with icon and optional redirect
+function showResultModal(type, title, message, autoRedirect = false, redirectDelay = 3000) {
+    const modalEl = document.getElementById('resultModal');
+    if (!modalEl) {
+        alert(message);
+        if (autoRedirect) setTimeout(() => { window.location.href = 'index.html'; }, redirectDelay);
         return;
     }
-    // normalize level -> bootstrap alert classes
-    const levelClass = level === 'success' ? 'alert-success'
-                     : (level === 'error' || level === 'danger') ? 'alert-danger'
-                     : (level === 'warning') ? 'alert-warning' : 'alert-info';
-    el.className = `alert ${levelClass}`; // reset classes
-    el.textContent = text;
-    el.classList.remove('d-none');
-    // optional auto hide
-    if (autoHide) {
-        setTimeout(() => {
-            if (el) el.classList.add('d-none');
-        }, timeout);
+    const header = document.getElementById('resultModalHeader');
+    const icon = document.getElementById('resultModalIcon');
+    const titleEl = document.getElementById('resultModalTitle');
+    const textEl = document.getElementById('resultModalText');
+
+    // Reset header classes
+    if (header) {
+        header.className = 'modal-header';
+    }
+    // choose appearance
+    const appearance = {
+        success: { headerClass: 'modal-header bg-success text-white', icon: 'bi-check-circle' , title: title || 'Éxito' },
+        danger: { headerClass: 'modal-header bg-danger text-white', icon: 'bi-x-circle', title: title || 'Error' },
+        warning: { headerClass: 'modal-header bg-warning text-dark', icon: 'bi-exclamation-triangle', title: title || 'Atención' },
+        info: { headerClass: 'modal-header bg-info text-white', icon: 'bi-info-circle', title: title || 'Información' }
+    };
+
+    const ap = appearance[type] || appearance.info;
+    if (header) header.className = ap.headerClass;
+    if (icon) {
+        icon.className = `bi ${ap.icon} fs-3 me-2`;
+    }
+    if (titleEl) titleEl.textContent = ap.title;
+    if (textEl) textEl.textContent = message;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    // Ensure redirect happens even if modal.show() throws for any reason
+    if (autoRedirect) {
+        setTimeout(() => { try { window.location.href = 'index.html'; } catch(_) { /* ignore */ } }, redirectDelay);
+    }
+    try {
+        modal.show();
+    } catch (e) {
+        // If showing modal fails, fallback to alert and rely on timer-based redirect (if enabled)
+        if (!autoRedirect) alert(message);
+    }
+}
+
+// Inline message helper used across the frontend
+function showInlineMessage(containerId, text, type = 'info', autoHide = true, timeout = 4000) {
+    try {
+        const el = document.getElementById(containerId);
+        if (!el) {
+            // fallback to alert
+            alert(text);
+            return;
+        }
+        // normalize classes
+        el.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-info', 'alert-warning');
+        const map = {
+            success: 'alert-success',
+            danger: 'alert-danger',
+            error: 'alert-danger',
+            warning: 'alert-warning',
+            info: 'alert-info'
+        };
+        const cls = map[type] || 'alert-info';
+        el.classList.add('alert', cls);
+        el.textContent = text;
+        // Announce to screen readers as well if live region exists
+        const live = document.getElementById('liveRegion');
+        if (live) live.textContent = text;
+
+        if (autoHide) {
+            setTimeout(() => {
+                try {
+                    el.classList.add('d-none');
+                } catch (e) { /* ignore */ }
+            }, timeout);
+        }
+    } catch (e) {
+        console.error('showInlineMessage error', e);
     }
 }
 
@@ -35,6 +91,40 @@ class PantallaRevisionManual {
         this.cboValorMagnitud = cboValorMagnitud;
         this.cboAlcanceSismo = cboAlcanceSismo;
         this.cboOrigenGeneracion = cboOrigenGeneracion;
+    }
+
+    // Accessibility & loading helpers
+    showLoading(message) {
+        try {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('d-none');
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+            const live = document.getElementById('liveRegion');
+            if (live && message) {
+                live.textContent = message;
+            }
+        } catch (e) {
+            // swallow
+        }
+    }
+
+    hideLoading(message) {
+        try {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.add('d-none');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+            const live = document.getElementById('liveRegion');
+            if (live && message) {
+                // small delay so screen readers pick up hide+message sequence
+                setTimeout(() => { live.textContent = message; }, 100);
+            }
+        } catch (e) {
+            // swallow
+        }
     }
 
     // Formatea fecha/hora al estilo local argentino: DD/MM/AAAA HH:MM:SS
@@ -63,8 +153,13 @@ class PantallaRevisionManual {
     async mostrarEventosSismicos() {
         const select = document.getElementById('evento');
         const mensaje = document.getElementById('mensajeEventos');
-
         try {
+            // show loading and disable controls
+            this.showLoading('Cargando eventos sísmicos...');
+            if (select) select.disabled = true;
+            const btnReg = document.getElementById('btnRegistrar');
+            if (btnReg) btnReg.disabled = true;
+
             const response = await fetch(`${API_BASE}/api/eventos`);
             const eventos = await response.json();
 
@@ -88,10 +183,17 @@ class PantallaRevisionManual {
                     option.textContent = texto;
                     select.appendChild(option);
                 });
+            
             }
         } catch (error) {
             mensaje.textContent = 'Error al cargar los eventos sísmicos.';
             mensaje.classList.remove('d-none');
+        } finally {
+            // hide loading and re-enable
+            this.hideLoading();
+            if (select) select.disabled = false;
+            const btnReg = document.getElementById('btnRegistrar');
+            if (btnReg) btnReg.disabled = false;
         }
     }
 
@@ -118,27 +220,37 @@ class PantallaRevisionManual {
             longHipocentro: evento[4]
         };
 
-        fetch(`${API_BASE}/eventos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datos)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                sessionStorage.setItem('eventoSeleccionado', JSON.stringify(data.evento));
-                sessionStorage.setItem('seriesTemporales', JSON.stringify(data.series_temporales || []));
-                sessionStorage.setItem('ultimosAlcances', JSON.stringify(data.alcances_sismo || []));
-                sessionStorage.setItem('ultimosOrigenes', JSON.stringify(data.origenes_generacion || []));
-                window.location.href = 'datos_evento.html';
-            } else {
-                alert(data.error || 'No se pudo seleccionar el evento');
+        // Use async/await with loading state
+        (async () => {
+            try {
+                this.showLoading('Seleccionando evento...');
+                const btnReg = document.getElementById('btnRegistrar');
+                if (btnReg) btnReg.disabled = true;
+
+                const resp = await fetch(`${API_BASE}/eventos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    sessionStorage.setItem('eventoSeleccionado', JSON.stringify(data.evento));
+                    sessionStorage.setItem('seriesTemporales', JSON.stringify(data.series_temporales || []));
+                    sessionStorage.setItem('ultimosAlcances', JSON.stringify(data.alcances_sismo || []));
+                    sessionStorage.setItem('ultimosOrigenes', JSON.stringify(data.origenes_generacion || []));
+                    window.location.href = 'datos_evento.html';
+                } else {
+                    alert(data.error || 'No se pudo seleccionar el evento');
+                }
+            } catch (error) {
+                console.error('Error en fetch:', error);
+                alert('Error de conexión con el servidor');
+            } finally {
+                this.hideLoading();
+                const btnReg = document.getElementById('btnRegistrar');
+                if (btnReg) btnReg.disabled = false;
             }
-        })
-        .catch(error => {
-            console.error('Error en fetch:', error);
-            alert('Error de conexión con el servidor');
-        });
+        })();
     }
 
     mostrarDatosSismicos(evento, seriesTemporales, alcance, origenSismico) {
@@ -360,73 +472,61 @@ class PantallaRevisionManual {
 
     async ejecutarAccion(accion) {
         // Ejecuta la acción indicada para el evento actualmente seleccionado.
-        // Indicador (badge) eliminado; se muestra únicamente feedback mediante el área de mensajes.
-        const mensajeEl = document.getElementById('mensajeAccion');
+        // Indicador (badge) eliminado; feedback se muestra mediante el modal de resultados.
         const btnConfirmar = document.getElementById('btnConfirmar');
         const btnDerivar = document.getElementById('btnDerivar');
         const btnRechazar = document.getElementById('btnRechazar');
         try {
-            console.debug('ejecutarAccion called with', accion);
-            // UI optimista: mostrar un mensaje inline mientras se procesa la acción
-            showInlineMessage('mensajeAccion', 'Procesando acción...', 'info', false);
+            // UI optimista: deshabilitar botones para evitar envíos dobles
+            if (btnConfirmar) btnConfirmar.disabled = true;
+            if (btnDerivar) btnDerivar.disabled = true;
+            if (btnRechazar) btnRechazar.disabled = true;
+
+            // show loading overlay
+            this.showLoading('Ejecutando acción...');
 
             const body = { accion };
-            console.debug('ejecutarAccion: enviando fetch', { url: `${API_BASE}/ejecutar_accion`, body });
 
             const response = await fetch(`${API_BASE}/ejecutar_accion`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
-            console.debug('ejecutarAccion: fetch completed', { ok: response.ok, status: response.status, statusText: response.statusText });
             let data = null;
             try {
                 data = await response.json();
             } catch (parseErr) {
-                console.error('ejecutarAccion: error parsing JSON response', parseErr);
+                // parsing error
                 // try to read text for debugging
                 try {
                     const text = await response.text();
-                    console.error('ejecutarAccion: response text:', text);
+                    // swallow
                 } catch (tErr) {
-                    console.error('ejecutarAccion: error reading response text', tErr);
+                    // swallow
                 }
             }
-            console.debug('ejecutarAccion response', data);
             if (data && data.success) {
-                // Mostrar mensaje en la página y deshabilitar botones de acción
-                showInlineMessage('mensajeAccion', data.mensaje || 'Acción ejecutada con éxito', 'success', true, 5000);
+                const msg = data.mensaje || 'Acción ejecutada con éxito';
                 // limpiar selección local para evitar doble envío
                 sessionStorage.removeItem('eventoSeleccionado');
                 sessionStorage.removeItem('seriesTemporales');
                 sessionStorage.removeItem('ultimosAlcances');
                 sessionStorage.removeItem('ultimosOrigenes');
-                if (btnConfirmar) btnConfirmar.disabled = true;
-                if (btnDerivar) btnDerivar.disabled = true;
-                if (btnRechazar) btnRechazar.disabled = true;
-                // NOTE: previously we redirected to index.html after a short delay.
-                // This caused unexpected immediate navigations in some flows. Disable automatic redirect
-                // so the user can see the inline message. If you want to re-enable automatic redirect,
-                // set `autoRedirectToHome = true` globally.
-                try {
-                    const autoRedirectToHome = window.autoRedirectToHome || false;
-                    if (autoRedirectToHome) {
-                        setTimeout(() => {
-                            console.debug('Redirecting to index.html after successful action (autoRedirectToHome=true)');
-                            window.location.href = 'index.html';
-                        }, 5000);
-                    } else {
-                        console.debug('Automatic redirect suppressed (autoRedirectToHome=false)');
-                    }
-                } catch (e) {
-                    console.error('Error checking autoRedirectToHome flag', e);
-                }
+                // Mostrar modal success y redirigir automáticamente a home
+                showResultModal('success', 'Operación exitosa', msg, true, 3000);
             } else {
-                showInlineMessage('mensajeAccion', data && data.error ? data.error : 'Error al ejecutar la acción', 'error', true, 6000);
+                const err = data && data.error ? data.error : 'Error al ejecutar la acción';
+                showResultModal('danger', 'Error', err, false);
             }
         } catch (error) {
-            console.error('Error en ejecutarAccion:', error);
-            showInlineMessage('mensajeAccion', 'Error de conexión con el servidor', 'error', true, 6000);
+            showResultModal('danger', 'Error de conexión', 'Error de conexión con el servidor', false);
+        }
+        finally {
+            // hide loading and ensure UI re-enabled if modal doesn't redirect
+            this.hideLoading();
+            if (btnConfirmar) btnConfirmar.disabled = false;
+            if (btnDerivar) btnDerivar.disabled = false;
+            if (btnRechazar) btnRechazar.disabled = false;
         }
     }
 
@@ -443,11 +543,17 @@ class PantallaRevisionManual {
 
 
     async tomarSeleccionDeOpcionMapa() {
-
-        const response = await fetch(`${API_BASE}/mapa`)
-        const data = await response.json();
-
-        alert(data);
+        try {
+            this.showLoading('Cargando mapa...');
+            const response = await fetch(`${API_BASE}/mapa`)
+            const data = await response.json();
+            alert(data);
+        } catch (e) {
+            console.error('Error cargando mapa', e);
+            alert('Error cargando mapa');
+        } finally {
+            this.hideLoading();
+        }
     }
     
     pedirOpcionModificarDatos() {
@@ -460,24 +566,24 @@ class PantallaRevisionManual {
     }
 
     async tomarOpcionModificacionDatos() {
-        const magnitud = this.cboValorMagnitud.value;
-        const alcanceSismo = this.cboAlcanceSismo.value;
-        const origenGeneracion = this.cboOrigenGeneracion.value;
-        console.debug('tomarOpcionModificacionDatos', { magnitud, alcanceSismo, origenGeneracion });
-        await fetch(`${API_BASE}/modificar_datos_evento`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ magnitud, alcanceSismo, origenGeneracion })
-        })
-        .then(r => r.json())
-        .then(data => {
+    const magnitud = this.cboValorMagnitud.value;
+    const alcanceSismo = this.cboAlcanceSismo.value;
+    const origenGeneracion = this.cboOrigenGeneracion.value;
+        try {
+            this.showLoading('Guardando cambios...');
+            const btn = document.getElementById('btnModificar');
+            if (btn) btn.disabled = true;
+
+            const r = await fetch(`${API_BASE}/modificar_datos_evento`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ magnitud, alcanceSismo, origenGeneracion })
+            });
+            const data = await r.json();
             const msg = document.getElementById('mensajeModificacion');
-                if (data.success) {
-                // Inline message (reverting notify.js usage)
+            if (data.success) {
                 showInlineMessage('mensajeModificacion', '✓ Datos modificados correctamente', 'success', true, 5000);
-                // Actualizar los datos mostrados en pantalla sin recargar
                 if (window.eventoActual) {
-                    // Actualizar el objeto magnitud (no usamos el campo legacy valorMagnitud)
                     const numVal = parseFloat(magnitud) || null;
                     if (window.eventoActual.magnitud) {
                         window.eventoActual.magnitud.numero = numVal;
@@ -486,9 +592,7 @@ class PantallaRevisionManual {
                     }
                     window.eventoActual.alcanceSismo = alcanceSismo;
                     window.eventoActual.origenGeneracion = origenGeneracion;
-                    // Actualizar también en sessionStorage
                     sessionStorage.setItem('eventoSeleccionado', JSON.stringify(window.eventoActual));
-                    // Llama al método de la instancia actual para refrescar los datos
                     this.mostrarDatosSismicos(
                         window.eventoActual,
                         window.seriesTemporalesActuales || [],
@@ -501,10 +605,22 @@ class PantallaRevisionManual {
                 msg.classList.remove('d-none');
                 msg.classList.remove('alert-success');
                 msg.classList.add('alert-danger');
-                // Hacer scroll al mensaje
                 msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
-        });
+        } catch (e) {
+            console.error('Error modificando datos:', e);
+            const msg = document.getElementById('mensajeModificacion');
+            if (msg) {
+                msg.textContent = '✗ Error de conexión';
+                msg.classList.remove('d-none');
+                msg.classList.remove('alert-success');
+                msg.classList.add('alert-danger');
+            }
+        } finally {
+            this.hideLoading();
+            const btn = document.getElementById('btnModificar');
+            if (btn) btn.disabled = false;
+        }
     }
 }
 

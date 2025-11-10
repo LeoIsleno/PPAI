@@ -552,6 +552,66 @@ body {
 }
 
 /* ========================================
+   Result modal specific styles
+   ======================================== */
+#resultModalContent {
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 520px;
+}
+
+#resultModalHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+}
+
+#resultModalIcon {
+    font-size: 1.9rem;
+    line-height: 1;
+}
+
+/* Provide a slightly larger title inside modal header */
+#resultModalTitle {
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+#resultModalText {
+    font-size: 1.05rem;
+    color: var(--dark);
+}
+
+/* Colored header alternatives (fine tune to theme) */
+.modal-header.bg-success {
+    background: linear-gradient(90deg, rgba(46,125,50,1), rgba(67,160,71,1));
+    color: white;
+}
+.modal-header.bg-danger {
+    background: linear-gradient(90deg, rgba(198,40,40,1), rgba(229,57,53,1));
+    color: white;
+}
+.modal-header.bg-warning {
+    background: linear-gradient(90deg, rgba(245,124,0,1), rgba(255,152,0,1));
+    color: #212121;
+}
+.modal-header.bg-info {
+    background: linear-gradient(90deg, rgba(3,169,244,1), rgba(2,136,209,1));
+    color: white;
+}
+
+/* Slight pop animation when modal shows */
+.modal.fade .modal-dialog {
+    transform: translateY(8px);
+    transition: transform 220ms ease, opacity 220ms ease;
+}
+.modal.show .modal-dialog {
+    transform: translateY(0);
+}
+
+
+/* ========================================
    Animaciones de Carga
    ======================================== */
 .spinner-seismic {
