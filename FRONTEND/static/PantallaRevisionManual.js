@@ -67,9 +67,7 @@ function showInlineMessage(containerId, text, type = 'info', autoHide = true, ti
         const cls = map[type] || 'alert-info';
         el.classList.add('alert', cls);
         el.textContent = text;
-        // Announce to screen readers as well if live region exists
-        const live = document.getElementById('liveRegion');
-        if (live) live.textContent = text;
+        // inline messages are shown visually; no screen-reader live region
 
         if (autoHide) {
             setTimeout(() => {
@@ -99,11 +97,6 @@ class PantallaRevisionManual {
             const overlay = document.getElementById('loadingOverlay');
             if (overlay) {
                 overlay.classList.remove('d-none');
-                overlay.setAttribute('aria-hidden', 'false');
-            }
-            const live = document.getElementById('liveRegion');
-            if (live && message) {
-                live.textContent = message;
             }
         } catch (e) {
             // swallow
@@ -115,12 +108,6 @@ class PantallaRevisionManual {
             const overlay = document.getElementById('loadingOverlay');
             if (overlay) {
                 overlay.classList.add('d-none');
-                overlay.setAttribute('aria-hidden', 'true');
-            }
-            const live = document.getElementById('liveRegion');
-            if (live && message) {
-                // small delay so screen readers pick up hide+message sequence
-                setTimeout(() => { live.textContent = message; }, 100);
             }
         } catch (e) {
             // swallow

@@ -10,11 +10,9 @@
 </head>
 <body class="login-body">
     <!-- Loading overlay (toggle d-none) -->
-    <div id="loadingOverlay" class="loading-overlay d-none" aria-hidden="true">
-        <div class="loading-spinner" role="status" aria-label="Cargando"></div>
+    <div id="loadingOverlay" class="loading-overlay d-none">
+        <div class="loading-spinner"></div>
     </div>
-    <!-- Live region for announcements to screen readers -->
-    <div id="liveRegion" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
 
     <div class="login-container">
         <div class="login-card">
@@ -27,7 +25,7 @@
             </div>
             
             <form id="loginForm" class="login-form">
-                <div class="alert alert-danger d-none" id="errorAlert" role="alert">
+                <div class="alert alert-danger d-none" id="errorAlert">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <span id="errorMessage"></span>
                 </div>

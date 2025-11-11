@@ -1,16 +1,17 @@
 from typing import Optional
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from BDD import orm_models
 
 
 class EstadoRepository:
     """Repository for Estado.
 
-    Important policy: this repository will NOT create new Estado rows automatically.
-    The canonical Estado rows must exist in the database (see `BDD/seed_states.py`).
-    Any attempt to persist a non-canonical Estado will raise a RuntimeError so the
-    caller can handle it explicitly. This prevents accidental proliferation of
-    duplicate Estado rows.
+    Policy: this repository will attempt to resolve an Estado to an existing
+    canonical row by `nombre_estado`. If no canonical row exists, it will create
+    and persist a new canonical `Estado` row using the normalized name returned
+    by the domain factory. This reduces manual DB maintenance while still
+    normalizing variants (e.g. "Auto-detectado" vs "AutoDetectado").
     """
     @staticmethod
     def from_domain(db: Session, estado):
@@ -35,11 +36,30 @@ class EstadoRepository:
             existente.ambito = estado.getAmbito()
             return existente
 
-        # IMPORTANT: do not create new Estado rows automatically.
-        # The application must use the existing states defined in the DB.
-        # If a canonical match is not found, raise so the caller can decide
-        # how to handle the missing state (avoid silently creating duplicates).
-        raise RuntimeError(f"Estado '{nombre_canonical}' no encontrado en la base de datos. No se crearán nuevos estados automáticamente.")
+        # If not found, create a new canonical Estado row and persist it.
+        # We handle possible race conditions (concurrent inserts) by catching
+        # IntegrityError and re-querying the existing row.
+        ambito_val = estado.getAmbito() if hasattr(estado, 'getAmbito') else None
+        nuevo = orm_models.Estado(nombre_estado=nombre_canonical, ambito=ambito_val)
+        db.add(nuevo)
+        try:
+            # flush so the row is written and an id is assigned within caller's transaction
+            db.flush()
+            return nuevo
+        except IntegrityError:
+            # Another transaction probably inserted the canonical row concurrently.
+            # Roll back the failed add and return the existing canonical row.
+            try:
+                db.rollback()
+            except Exception:
+                # if rollback is not possible in this context, continue to query
+                pass
+            existente = db.query(orm_models.Estado).filter_by(nombre_estado=nombre_canonical).first()
+            if existente:
+                existente.ambito = ambito_val
+                return existente
+            # If still not found, re-raise the error to make failure explicit
+            raise
 
     @staticmethod
     def get_by_id(db: Session, id: int) -> Optional[orm_models.Estado]:

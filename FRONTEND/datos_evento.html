@@ -28,11 +28,9 @@
     </nav>
 
     <!-- Loading overlay (toggleando d-none) -->
-    <div id="loadingOverlay" class="loading-overlay d-none" aria-hidden="true">
-        <div class="loading-spinner" role="status" aria-label="Cargando"></div>
+    <div id="loadingOverlay" class="loading-overlay d-none">
+        <div class="loading-spinner"></div>
     </div>
-    <!-- Live region for announcements to screen readers -->
-    <div id="liveRegion" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
 
     <div class="container mb-5">
         <!-- Datos principales -->
@@ -43,11 +41,11 @@
                     Información del Evento Sísmico
                 </h4>
             </div>
-            <nav aria-label="breadcrumb" class="px-3 py-2">
+            <nav class="px-3 py-2">
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="index.html">Inicio</a></li>
                     <li class="breadcrumb-item"><a href="registrar.html">Revisión Manual</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Detalle del Evento</li>
+                    <li class="breadcrumb-item active">Detalle del Evento</li>
                 </ol>
             </nav>
             <!-- microcopy sobre formato de fecha removida -->
@@ -172,12 +170,12 @@
         </div>
 
         <!-- Modal clásico de confirmación (bloqueante) -->
-        <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionModalLabel" aria-hidden="true">
+    <div class="modal fade" id="confirmActionModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="confirmActionModalLabel">Confirmar acción</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <p id="confirmModalText">¿Confirma la acción sobre el evento?</p>
@@ -193,7 +191,7 @@
     </div>
 
     <!-- Resultado visible en modal (mensaje prominente luego de confirmar/rechazar) -->
-    <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+    <div class="modal fade" id="resultModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" id="resultModalContent">
                 <div class="modal-header" id="resultModalHeader">

@@ -44,6 +44,9 @@ class Usuario(Base):
 class Estado(Base):
     __tablename__ = 'estado'
     id = Column(Integer, primary_key=True)
+    # Canonical state name used across the application. Make it unique
+    # to prevent duplicate Estado rows in the database.
+    nombre_estado = Column(String(200), unique=True, nullable=False)
     # Ensure the canonical state name is unique to avoid accidental duplicates
     ambito = Column(String(200))
 
