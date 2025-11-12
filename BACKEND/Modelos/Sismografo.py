@@ -50,29 +50,19 @@ class Sismografo:
 
     # Método para agregar una serie temporal
     def sosDeSerieTemporal(self, serieTemporal):
-        # Intent: no confiar en identidad de objetos (se crean instancias distintas
-        # al mapear desde ORM). Comparar por atributos que identifican la serie.
         for serie in self.__seriesTemporales:
-            try:
-                # Comparar por fecha de registro cuando esté disponible
-                if hasattr(serie, 'getFechaHoraRegistro') and hasattr(serieTemporal, 'getFechaHoraRegistro'):
-                    if serie.getFechaHoraRegistro() == serieTemporal.getFechaHoraRegistro():
-                        return {
-                            'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
-                            'nombreEstacion': self.__estacionSismologica.getNombre()
-                        }
+            # Comparar por fecha de registro
+            if serie.getFechaHoraRegistro() == serieTemporal.getFechaHoraRegistro():
+                return {
+                    'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
+                    'nombreEstacion': self.__estacionSismologica.getNombre()
+                }
 
-                # Fallback: comparar por frecuencia de muestreo
-                if hasattr(serie, 'getFrecuenciaMuestreo') and hasattr(serieTemporal, 'getFrecuenciaMuestreo'):
-                    if serie.getFrecuenciaMuestreo() == serieTemporal.getFrecuenciaMuestreo():
-                        return {
-                            'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
-                            'nombreEstacion': self.__estacionSismologica.getNombre()
-                        }
-            except (AttributeError, TypeError):
-                # Si alguna comparación falla por API faltante o tipo inesperado,
-                # continuar con la siguiente serie (no capturamos excepciones generales).
-                continue
+            if serie.getFrecuenciaMuestreo() == serieTemporal.getFrecuenciaMuestreo():
+                return {
+                    'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
+                    'nombreEstacion': self.__estacionSismologica.getNombre()
+                }
         return None
 
     def getEstado(self):

@@ -9,7 +9,6 @@ class SerieTemporal:
         self._frecuenciaMuestreo = frecuenciaMuestreo
         self._condicionAlarma = condicionAlarma
         self._muestraSismica = []
-        # Manejar tanto una lista como un objeto individual
         if muestraSismica is not None:
             if isinstance(muestraSismica, list):
                 self._muestraSismica = muestraSismica
@@ -66,8 +65,6 @@ class SerieTemporal:
         self._estado = estado
 
     def getDatos(self, sismografos):
-        # Devolver None cuando no se encuentra la estación para que el frontend
-        # pueda aplicar los fallbacks más claramente.
         estacion_sismologica = None
 
         muestras_datos = []

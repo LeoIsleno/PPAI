@@ -2,12 +2,7 @@ from abc import ABC
 
 
 class Estado(ABC):
-    """Clase base para todos los estados.
-
-    Contiene el nombre del estado y el ámbito (p.ej. 'EventoSismico').
-    Las subclases concretas pueden sobreescribir los métodos de transición
-    si corresponden.
-    """
+    """Clase base para todos los estados."""
 
     def __init__(self, nombre: str = None, ambito: str = None):
         self._nombre = nombre
@@ -22,14 +17,10 @@ class Estado(ABC):
     def getNombreEstado(self):
         return self._nombre
 
-    # Operaciones que pueden implicar una transición de estado.
-    # Las subclases pueden cerrar el cambio de estado actual consultando
-    # directamente `evento.obtenerCambioEstadoActual()` cuando sea necesario.
     def bloquear(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
 
     def rechazar(self, evento, fechaHoraActual, usuario):
-        # Comportamiento por defecto: no hacer nada y devolver None.
         return None
 
     def confirmar(self, evento, fechaHoraActual, usuario):
@@ -46,6 +37,44 @@ class Estado(ABC):
 
     def esAmbitoEventoSismico(self):
         return self.getAmbito() == "EventoSismico"
+
+    def esAutoDetectado(self):
+        """Predicado por defecto: los estados concretos pueden sobrescribirlo.
+
+        Esto permite al código cliente (por ejemplo, GestorRevisionManual) invocar
+        `estado.esAutoDetectado()` sin comprobar con hasattr, respetando el
+        patrón State y la polimorfía.
+        """
+        return False
+
+    def esAutoConfirmado(self):
+        """Indica si el estado es 'AutoConfirmado'. Sobrescribir en subclases."""
+        return False
+
+    def esBloqueado(self):
+        """Indica si el estado representa un bloqueo para revisión."""
+        return False
+
+    def esRechazado(self):
+        return False
+
+    def esConfirmadoPorPersonal(self):
+        return False
+
+    def esDerivado(self):
+        return False
+
+    def esSinRevision(self):
+        return False
+
+    def esPendienteDeRevision(self):
+        return False
+
+    def esPendienteDeCierre(self):
+        return False
+
+    def esCerrado(self):
+        return False
 
     @classmethod
     def from_name(cls, nombre: str, ambito=None):
@@ -91,8 +120,8 @@ class Estado(ABC):
         if estado_clase:
             return estado_clase(ambito)
 
-        # Fallback a AutoDetectado si no se reconoce
-        return AutoDetectado(ambito)
+        # Nombre no reconocido: hacer el fallo explícito en vez de usar un fallback
+        raise ValueError(f"Estado desconocido: '{nombre}'")
 
 
 def _es_ambito_evento_sismico(ambito):

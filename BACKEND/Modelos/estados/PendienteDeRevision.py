@@ -9,3 +9,6 @@ class PendienteDeRevision(Estado):
 
     def getNombreEstado(self):
         return "Pendiente de Revisión"
+
+    def esPendienteDeRevision(self):
+        return True

@@ -26,93 +26,70 @@ class EventoSismico:
         self._clasificacion = clasificacion
         self._estadoActual = estadoActual
         self._cambiosEstado = cambiosEstado if isinstance(cambiosEstado, list) else [cambiosEstado]
-        # Referencia explícita al cambio de estado actual (el que tenga fechaHoraFin == None)
         self._cambioEstadoActual = None
-        # si en la lista de cambios hay uno abierto (fechaHoraFin es None), usarlo
-        try:
-            for ce in self._cambiosEstado:
-                if hasattr(ce, 'getFechaHoraFin'):
-                    if ce.getFechaHoraFin() is None:
-                        self._cambioEstadoActual = ce
-                        break
-        except (AttributeError, TypeError):
-            # En casos donde los objetos no tienen la API esperada, dejamos None
-            self._cambioEstadoActual = None
+        
+        for ce in self._cambiosEstado:
+            if ce.getFechaHoraFin() is None:
+                self._cambioEstadoActual = ce
+                break
         self._serieTemporal = serieTemporal
 
-    def __str__(self):
-        mag = None
-        if isinstance(self._magnitud, MagnitudRichter):
-            mag = self._magnitud.getNumero()
-        return f"Evento Sismico: {self.getFechaHoraOcurrencia().strftime('%Y-%m-%d %H:%M:%S')} - Magnitud: {mag}"
 
-    # Fecha Ocurrencia
+
     def getFechaHoraOcurrencia(self):
         return self._fechaHoraOcurrencia
 
     def setFechaHoraOcurrencia(self, value):
         self._fechaHoraOcurrencia = value
 
-    # Fecha Fin
     def getFechaHoraFin(self):
         return self._fechaHoraFin
 
     def setFechaHoraFin(self, value):
         self._fechaHoraFin = value
 
-    # Latitud Epicentro
     def getLatitudEpicentro(self):
         return self._latitudEpicentro
 
     def setLatitudEpicentro(self, value):
         self._latitudEpicentro = value
 
-    # Longitud Epicentro
     def getLongitudEpicentro(self):
         return self._longitudEpicentro
 
     def setLongitudEpicentro(self, value):
         self._longitudEpicentro = value
 
-    # Latitud Hipocentro
     def getLatitudHipocentro(self):
         return self._latitudHipocentro
 
     def setLatitudHipocentro(self, value):
         self._latitudHipocentro = value
 
-    # Longitud Hipocentro
     def getLongitudHipocentro(self):
         return self._longitudHipocentro
 
     def setLongitudHipocentro(self, value):
         self._longitudHipocentro = value
 
-    # Valor Magnitud
-    # Acceso al objeto MagnitudRichter
     def getMagnitud(self):
         return self._magnitud
 
     def setMagnitud(self, magnitud: MagnitudRichter):
         self._magnitud = magnitud
 
-    # NOTE: legacy numeric access removed. Use getMagnitud()/setMagnitud() to work with MagnitudRichter objects.
-
-    # Origen Generacion
     def getOrigenGeneracion(self):
         return self._origenGeneracion
 
     def setOrigenGeneracion(self, value):
         self._origenGeneracion = value
 
-    # Clasificacion
     def getClasificacion(self):
         return self._clasificacion
 
     def setClasificacion(self, value):
         self._clasificacion = value
 
-    # Estado Actual
     def getEstadoActual(self):
         return self._estadoActual
 
@@ -120,33 +97,25 @@ class EventoSismico:
         self._estadoActual = value
 
     def setEstadoActual(self, estado: Estado):
-        """Método requerido por la dinámica: ajusta el estado actual del evento."""
-        # Mantener alias hacia setEstado para compatibilidad
+        """Alias a setEstado para compatibilidad."""
         self.setEstado(estado)
 
     def setCambioEstadoActual(self, cambio: CambioEstado):
-        """Establece cuál es el cambio de estado actual del evento.
-
-        No realiza persistencia, solo actualiza la referencia en memoria.
-        """
+        """Establece cuál es el cambio de estado actual del evento (no persiste)."""
         self._cambioEstadoActual = cambio
 
-    # Cambios Estado
     def getCambiosEstado(self):
-        """Retorna la lista de cambios de estado"""
         return self._cambiosEstado
 
     def setCambiosEstado(self, value):
         self._cambiosEstado = value
 
-    # Alcance Sismo
     def getAlcanceSismo(self):
         return self._alcanceSismo
 
     def setAlcanceSismo(self, value):
         self._alcanceSismo = value
 
-    # Serie Temporal
     def getSerieTemporal(self):
         return self._serieTemporal
 
@@ -168,16 +137,14 @@ class EventoSismico:
                 self.getLongitudHipocentro(),
                 magn]
 
-        # borre lo del cambio de estado de aca
-
-    def obtenerDatosSismicos(self): #TODO: ESTE MEDTODO ESTA RETORNANDO COSAS DE MAS, O LE BORRAMOS COSAS O LO CAMBIAMOS EN EL DIAG DE SECUENCIA
+    def obtenerDatosSismicos(self):
         """Obtiene los datos sísmicos completos del evento seleccionado recorriendo explícitamente las relaciones"""
-        # Acceso explícito a cada relación
+        
         nombre_alcance = self._alcanceSismo.getNombre() if self._alcanceSismo else 'No disponible'
         descripcion_alcance = self._alcanceSismo.getDescripcion() if self._alcanceSismo else 'No disponible'
         nombre_clasificacion = self._clasificacion.getNombre() if self._clasificacion else 'No disponible'
         nombre_origen = self._origenGeneracion.getNombre() if self._origenGeneracion else 'No disponible'
-    # info completa de magnitud para el frontend (compatibilidad)
+    
         magnitud_info = None
         if isinstance(self._magnitud, MagnitudRichter):
             magnitud_info = {

@@ -10,6 +10,10 @@ class AutoConfirmado(Estado):
     def getNombreEstado(self):
         return "Auto-confirmado"
 
+    def esAutoConfirmado(self):
+        """Indica que este estado es 'AutoConfirmado'."""
+        return True
+
 
     def derivar(self, evento, fechaHoraActual, usuario):
         """Transición desde AutoConfirmado -> Derivado."""
@@ -20,22 +24,13 @@ class AutoConfirmado(Estado):
         # cerrar cambio actual si existe
         cambio_actual = evento.obtenerCambioEstadoActual()
         if cambio_actual:
-            try:
-                cambio_actual.setFechaHoraFin(fechaHoraActual)
-            except (AttributeError, TypeError):
-                pass
+            cambio_actual.setFechaHoraFin(fechaHoraActual)
 
         # actualizar estado en el contexto
-        try:
-            evento.setEstadoActual(nuevo_estado)
-        except (AttributeError, TypeError):
-            evento.setEstado(nuevo_estado)
+        evento.setEstadoActual(nuevo_estado)
 
         # crear el nuevo cambio
         nuevo_cambio = evento.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
-        try:
-            evento.setCambioEstadoActual(nuevo_cambio)
-        except (AttributeError, TypeError):
-            pass
+        evento.setCambioEstadoActual(nuevo_cambio)
 
         return nuevo_cambio

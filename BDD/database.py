@@ -26,13 +26,10 @@ engine = create_engine(
 
 @event.listens_for(engine, "connect")
 def _set_sqlite_pragma(dbapi_connection, connection_record):
-    try:
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA journal_mode=WAL;")
-        cursor.execute("PRAGMA busy_timeout = 30000;")
-        cursor.close()
-    except Exception:
-        pass
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.execute("PRAGMA busy_timeout = 30000;")
+    cursor.close()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -45,15 +42,7 @@ def init_db():
     importación: `BDD.orm_models` hace `from .database import Base`, por lo
     que `Base` debe existir antes de importar los modelos.
     """
-    try:
-        import BDD.orm_models  # noqa: F401
-    except Exception:
-        # Fallback: try relative import (if package semantics differ)
-        try:
-            from . import orm_models  # noqa: F401
-        except Exception:
-            # If import fails, re-raise to make the error visible to the caller
-            raise
+    import BDD.orm_models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

@@ -9,6 +9,7 @@ class PendienteDeCierre(Estado):
 
     def getNombreEstado(self):
         return "Pendiente de Cierre"
-    # La transición a 'Cerrado' se omite aquí porque no existen llamadas
-    # estáticas a `cerrar` en el repositorio actual; mantener la clase
-    # mínima mejora la mantenibilidad.
+
+    def esPendienteDeCierre(self):
+        return True
+

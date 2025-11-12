@@ -10,6 +10,10 @@ class AutoDetectado(Estado):
     def getNombreEstado(self):
         return "Auto-detectado"
 
+    def esAutoDetectado(self):
+        """Indica que este estado representa un evento auto-detectado."""
+        return True
+
     def bloquear(self, evento, fechaHoraActual, usuario):
         """Transición desde AutoDetectado -> BloqueadoEnRevision.
 
@@ -24,22 +28,13 @@ class AutoDetectado(Estado):
         # cerrar cambio actual si existe
         cambio_actual = evento.obtenerCambioEstadoActual()
         if cambio_actual:
-            try:
-                cambio_actual.setFechaHoraFin(fechaHoraActual)
-            except (AttributeError, TypeError):
-                pass
+            cambio_actual.setFechaHoraFin(fechaHoraActual)
 
         # actualizar estado en el contexto
-        try:
-            evento.setEstadoActual(nuevo_estado)
-        except (AttributeError, TypeError):
-            evento.setEstado(nuevo_estado)
+        evento.setEstadoActual(nuevo_estado)
 
         # crear el nuevo cambio y notificar al evento cuál es el cambio actual
         nuevo_cambio = evento.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
-        try:
-            evento.setCambioEstadoActual(nuevo_cambio)
-        except (AttributeError, TypeError):
-            pass
+        evento.setCambioEstadoActual(nuevo_cambio)
 
         return nuevo_cambio
