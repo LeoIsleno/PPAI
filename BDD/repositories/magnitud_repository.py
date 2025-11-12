@@ -10,8 +10,8 @@ class MagnitudRepository:
             return None
 
         numero = magnitud.getNumero()
-        descripcion = getattr(magnitud, 'getDescripcionMagnitud', lambda: None)()
-        
+        descripcion = magnitud.getDescripcionMagnitud()
+
         if numero:
             existente = db.query(orm_models.MagnitudRichter).filter_by(numero=numero).first()
             if existente:

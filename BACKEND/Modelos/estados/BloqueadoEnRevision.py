@@ -62,11 +62,6 @@ class BloqueadoEnRevision(Estado):
         return nuevo_cambio_estado
 
     def crearProximoEstado(self, tipo_estado):
-        # Importar localmente para evitar problemas de import circular y
-        # permitir que cada estado se resuelva en tiempo de ejecución.
-        # Las clases de estado esperan solo el parámetro `ambito` opcional
-        # (el nombre se establece internamente en cada clase). Por lo tanto
-        # instanciamos pasando el ámbito actual del estado.
         ambito = self.getAmbito()
         if tipo_estado == "Rechazado":
             from .Rechazado import Rechazado

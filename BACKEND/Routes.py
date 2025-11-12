@@ -34,7 +34,8 @@ database.init_db()
 
 sismografos_persistentes = []
 provider = ListaSismografos(usuario)
-sismografos_persistentes = getattr(provider, 'sismografos', []) or []
+# Acceso directo al atributo `sismografos`; si no existe, se propagará la excepción.
+sismografos_persistentes = provider.sismografos or []
 
 eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos(sismografos_persistentes, usuario)
 

@@ -5,19 +5,20 @@ class AutoConfirmado(Estado):
     """Estado AutoConfirmado: eventos confirmados automáticamente por el sistema."""
 
     def __init__(self, ambito=None):
-        super().__init__("Auto-confirmado", ambito)
+        super().__init__("AutoConfirmado", ambito)
 
     def getNombreEstado(self):
-        return "Auto-confirmado"
+        return "AutoConfirmado"
 
     def esAutoConfirmado(self):
         """Indica que este estado es 'AutoConfirmado'."""
         return True
 
 
-    def derivar(self, evento, fechaHoraActual, usuario):
-        """Transición desde AutoConfirmado -> Derivado."""
-        from .Derivado import Derivado
+    def derivar(self, evento, fechaHoraActual, usuario, cambiosEstado=None):
+        
+        # Crear el nuevo estado a través de la fábrica para evitar imports directos
+        nuevo_estado = Estado.from_name("Derivado", self.getAmbito())
 
         nuevo_estado = Derivado(self.getAmbito())
 

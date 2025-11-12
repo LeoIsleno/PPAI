@@ -1,9 +1,9 @@
 from datetime import datetime
-from Modelos.Estado import Estado
-from Modelos.EventoSismico import EventoSismico
-from Modelos.Sismografo import Sismografo
-from Modelos.Sesion import Sesion
-from Modelos.MagnitudRichter import MagnitudRichter
+from BACKEND.Modelos.Estado import Estado
+from BACKEND.Modelos.EventoSismico import EventoSismico
+from BACKEND.Modelos.Sismografo import Sismografo
+from BACKEND.Modelos.Sesion import Sesion
+from BACKEND.Modelos.MagnitudRichter import MagnitudRichter
 from BDD.database import SessionLocal
 from BDD.repositories.evento_repository import EventoRepository
 
@@ -15,6 +15,7 @@ class GestorRevisionManual:
         self.__opcionModificacionDatosSeleccionada = None
         self.__opcionEventoSeleccionada = None
         self._usuarioLogueado = None
+        self._fechaHoraActual = None
 
     def opRegistrarResultadoRevisionManual(self, eventos):
         # Obtener los eventos de dominio que están en estado AutoDetectado,
@@ -27,8 +28,12 @@ class GestorRevisionManual:
     def buscarEventosAutoDetectados(self, eventos):
         eventos_auto_detectado = []
         for evento in eventos:
+            # Llamada directa al getter del dominio; dejar que falle si el objeto
+            # no implementa el método para que el error sea visible.
             estado = evento.getEstadoActual()
-            if estado is not None and estado.esAutoDetectado():
+
+            # Comprobar tipo y condición de estado
+            if isinstance(estado, Estado) and estado.esAutoDetectado():
                 eventos_auto_detectado.append(evento)
         return eventos_auto_detectado
 
@@ -38,7 +43,7 @@ class GestorRevisionManual:
     def obtenerFechaHoraActual(self):
         return datetime.now()
 
-    def bloquearEventoSismico(self, evento: EventoSismico, fecha_hora: datetime, usuario):
+    def bloquearEventoSismico(self):
         """
         Bloquea un evento sísmico cambiando su estado actual y registrando el cambio.
         Este método recibe un `Usuario` y lo pasa a `EventoSismico.bloquear`, que se
@@ -47,7 +52,8 @@ class GestorRevisionManual:
         # La operación de bloqueo delega en el dominio; el dominio gestiona
         # el cambio de estado y el registro del responsable. Ya no se
         # devuelve ni se almacena un "último cambio" aquí.
-        evento.bloquear(fecha_hora, usuario)
+        evento:EventoSismico = self.__eventoSismicoSeleccionado
+        evento.bloquear(self._fechaHoraActual, self._usuarioLogueado)
 
         # Usar context managers para que la sesión y la transacción se manejen
         # automáticamente (commit/rollback y close).
@@ -112,16 +118,17 @@ class GestorRevisionManual:
 
 
 
-    def rechazarEventoSismico(self, evento: EventoSismico, usuario, fecha_hora):
-        evento.rechazar(fecha_hora, usuario)
+    def rechazarEventoSismico(self):
+        evento:EventoSismico = self.__eventoSismicoSeleccionado
+        evento.rechazar(self._fechaHoraActual, self._usuarioLogueado)
 
         with SessionLocal() as db:
             with db.begin():
                 EventoRepository.from_domain(db, evento)
 
         return True
-        
-    def confirmarEventoSismico(self, evento: EventoSismico, usuario, fecha_hora):
+
+    def confirmarEventoSismico(self):
         """
         Confirma un evento sísmico delegando en el dominio y persistiendo el cambio.
         Se mantiene la misma forma que `rechazarEventoSismico`: el método del gestor
@@ -130,7 +137,8 @@ class GestorRevisionManual:
         """
         # Delegar la confirmación al dominio. El dominio actualizará el
         # cambio/estado internamente; no guardamos un "último cambio" aquí.
-        evento.confirmar(fecha_hora, usuario)
+        evento:EventoSismico = self.__eventoSismicoSeleccionado
+        evento.confirmar(self._fechaHoraActual, self._usuarioLogueado)
 
         with SessionLocal() as db:
             with db.begin():
@@ -138,14 +146,15 @@ class GestorRevisionManual:
 
         return True
 
-    def derivarEventoSismico(self, evento: EventoSismico, usuario, fecha_hora):
+    def derivarEventoSismico(self):
         """
         Deriva un evento sísmico a experto delegando en el dominio y persistiendo el cambio.
         Similar a confirmarEventoSismico y rechazarEventoSismico, delega la lógica al
         dominio (`evento.derivar`) y luego persiste usando EventoRepository.
         """
         # Delegar la derivación al dominio.
-        evento.derivar(fecha_hora, usuario)
+        evento:EventoSismico = self.__eventoSismicoSeleccionado
+        evento.derivar(self._fechaHoraActual, self._usuarioLogueado)
 
         with SessionLocal() as db:
             with db.begin():
@@ -195,10 +204,10 @@ class GestorRevisionManual:
             if usuario is None:
                 return {'success': False, 'error': 'Usuario no autorizado para bloquear eventos', 'status_code': 403}
             self._usuarioLogueado = usuario
-            fec_hora = self.obtenerFechaHoraActual()
+            self._fechaHoraActual = self.obtenerFechaHoraActual()
 
             # Intentar bloquear el evento (cambiar su estado)
-            if self.bloquearEventoSismico(evento_seleccionado, fec_hora, usuario):
+            if self.bloquearEventoSismico():
                 evento_sismico = self.buscarDatosSismicos(evento_seleccionado)
                 series_temportales = self.buscarSeriesTemporales(evento_seleccionado, sismografos)
                 self.llamarCUGenerarSismograma(evento_seleccionado)
@@ -220,10 +229,10 @@ class GestorRevisionManual:
             if not valid.get('success'):
                 return valid
 
-            fec_hora = self.obtenerFechaHoraActual()
+            self._fechaHoraActual = self.obtenerFechaHoraActual()
 
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, fec_hora)
+            self.rechazarEventoSismico()
             return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
         
         elif accion == 'confirmar':
@@ -231,10 +240,10 @@ class GestorRevisionManual:
             if not valid.get('success'):
                 return valid
 
-            fec_hora = self.obtenerFechaHoraActual()
+            self._fechaHoraActual = self.obtenerFechaHoraActual()
 
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.confirmarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, fec_hora)
+            self.confirmarEventoSismico()
             return {'success': True, 'mensaje': 'Evento confirmado correctamente'}
         
         elif accion == 'experto':
@@ -242,10 +251,10 @@ class GestorRevisionManual:
             if not valid.get('success'):
                 return valid
 
-            fec_hora = self.obtenerFechaHoraActual()
+            self._fechaHoraActual = self.obtenerFechaHoraActual()
 
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.derivarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, fec_hora)
+            self.derivarEventoSismico()
             return {'success': True, 'mensaje': 'Evento derivado a experto correctamente'}
         
         else:
@@ -307,7 +316,7 @@ class GestorRevisionManual:
                 EventoRepository.from_domain(db, evento)
 
         return {'success': True}
-            
+
 
 
 

@@ -28,7 +28,7 @@ class EventoRepository:
         fecha = evento.getFechaHoraOcurrencia()
         magnitud_num = None
         
-        magnitud_obj = getattr(evento, 'getMagnitud', lambda: None)()
+        magnitud_obj = evento.getMagnitud()
         if magnitud_obj:
             magnitud_num = magnitud_obj.getNumero()
 
@@ -71,7 +71,7 @@ class EventoRepository:
             existente.estado_actual = EstadoRepository.from_domain(db, estado)
 
         # Cambios de estado
-        cambios = getattr(evento, 'getCambiosEstado', lambda: [])() or []
+        cambios = evento.getCambiosEstado() or []
         for cambio in cambios:
             cambio_orm = CambioEstadoRepository.from_domain(db, cambio)
             cambio_orm.evento = existente
@@ -79,7 +79,7 @@ class EventoRepository:
                 existente.cambios_estado.append(cambio_orm)
 
         # Series temporales
-        series = getattr(evento, 'getSerieTemporal', lambda: [])() or []
+        series = evento.getSerieTemporal() or []
         for serie in series:
             serie_orm = SerieRepository.from_domain(db, serie)
             serie_orm.evento = existente

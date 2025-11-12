@@ -420,10 +420,12 @@ class PantallaRevisionManual {
                         const icono = det.tipoDeDato === 'Velocidad de onda' ? 'speedometer' : 
                                      det.tipoDeDato === 'Frecuencia de onda' ? 'activity' : 'rulers';
                         const unidad = det.unidad ? ` ${det.unidad}` : '';
+                        // Mostrar 0 y 0.0 como valores válidos: solo considerar 'N/A' cuando valor es null/undefined
+                        const valorTexto = (det.valor === null || det.valor === undefined) ? 'N/A' : det.valor;
                         html += `
                         <li class="mb-1">
                             <i class="bi bi-${icono} me-2" style="color: var(--accent);"></i>
-                            <strong>${det.tipoDeDato || 'Dato'}:</strong> ${det.valor || 'N/A'}${unidad}
+                            <strong>${det.tipoDeDato || 'Dato'}:</strong> ${valorTexto}${unidad}
                         </li>`;
                     });
                 } else {

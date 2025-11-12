@@ -20,6 +20,28 @@ class Estado(ABC):
     def bloquear(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
 
+    # Caché opcional de instancias de estados para evitar crear múltiples
+    # instancias sin necesidad. La clave es (nombre_normalizado, ambito).
+    _state_cache = {}
+
+    @classmethod
+    def get_or_create_state(cls, nombre: str, ambito: str = None):
+        """Devuelve una instancia compartida del estado indicado si existe en
+        caché, o la crea mediante from_name y la guarda en caché.
+
+        Esto satisface la necesidad de 'buscar si existe una instancia del
+        estado y si no existe, crearla'. La clave incluye el ámbito para
+        permitir diferentes instancias por contexto si fuera necesario.
+        """
+        key_name = (nombre or "").strip().lower().replace(" ", "").replace("-", "")
+        key = (key_name, ambito)
+        inst = cls._state_cache.get(key)
+        if inst is not None:
+            return inst
+        # Crear mediante la fábrica y almacenar
+        inst = cls.from_name(nombre, ambito)
+        cls._state_cache[key] = inst
+        return inst
     def rechazar(self, evento, fechaHoraActual, usuario):
         return None
 
@@ -42,8 +64,7 @@ class Estado(ABC):
         """Predicado por defecto: los estados concretos pueden sobrescribirlo.
 
         Esto permite al código cliente (por ejemplo, GestorRevisionManual) invocar
-        `estado.esAutoDetectado()` sin comprobar con hasattr, respetando el
-        patrón State y la polimorfía.
+    `estado.esAutoDetectado()` respetando el patrón State y la polimorfía.
         """
         return False
 
