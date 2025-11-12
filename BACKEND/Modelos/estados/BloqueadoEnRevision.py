@@ -29,23 +29,22 @@ class BloqueadoEnRevision(Estado):
         except Exception:
             cambio_actual = None
 
-    def crearProximoEstado(self, nuevo_estado):
+    def crearProximoEstado(self, nuevoEstado):
         """Resuelve/crea la instancia del próximo Estado.
 
         Parámetros:
-        - nuevo_estado: puede ser una instancia de Estado o un nombre (str).
-
-        Si `nuevo_estado` es un nombre desconocido para la fábrica, se crea
+        - nuevoEstado: puede ser una instancia de Estado o un nombre (str).
+        Si `nuevoEstado` es un nombre desconocido para la fábrica, se crea
         dinámicamente una instancia genérica de `Estado` con ese nombre en
         lugar de devolver un fallback a otro tipo.
         """
         # Si ya es una instancia, devolverla tal cual
-        if isinstance(nuevo_estado, Estado):
-            return nuevo_estado
+        if isinstance(nuevoEstado, Estado):
+            return nuevoEstado
 
         # Resolver por nombre mediante la fábrica
-        nombre_solicitado = str(nuevo_estado) if nuevo_estado is not None else None
-        instancia = Estado.from_name(nombre_solicitado, self.getAmbito())
+        nombreSolicitado = str(nuevoEstado) if nuevoEstado is not None else None
+        instancia = Estado.from_name(nombreSolicitado, self.getAmbito())
 
         # Normalizar nombres para comparar si la fábrica realmente reconoció el nombre
         def _norm(s):
@@ -53,26 +52,26 @@ class BloqueadoEnRevision(Estado):
                 return ""
             return s.strip().lower().replace(" ", "").replace("-", "")
 
-        if nombre_solicitado is None:
+        if nombreSolicitado is None:
             return instancia
 
-        solicitado_norm = _norm(nombre_solicitado)
+        solicitado_norm = _norm(nombreSolicitado)
         encontrado_norm = _norm(instancia.getNombreEstado() if hasattr(instancia, 'getNombreEstado') else instancia.__class__.__name__)
 
         if solicitado_norm != encontrado_norm:
             # La fábrica devolvió un fallback distinto; crear un Estado genérico con el nombre solicitado
-            return Estado(nombre_solicitado, self.getAmbito())
+            return Estado(nombreSolicitado, self.getAmbito())
 
         return instancia
 
-    def crearCambioEstado(self, nuevo_estado, fechaHoraActual, usuario):
+    def crearCambioEstado(self, nuevoEstado, fechaHoraActual, usuario):
         from ..CambioEstado import CambioEstado
         """
         Crea y devuelve una instancia real de CambioEstado (no un dict).
         """
         # crear la instancia concreta de CambioEstado definida en Modelos/CambioEstado.py
-        nuevo_cambio = CambioEstado(fechaHoraActual, nuevo_estado, usuario, fechaHoraFin=None)
-        return nuevo_cambio
+        nuevoCambio = CambioEstado(fechaHoraActual, nuevoEstado, usuario, fechaHoraFin=None)
+        return nuevoCambio
 
     def rechazar(self, evento, fechaHoraActual, usuario, cambiosEstado):
         """Transición desde BloqueadoEnRevision -> Rechazado.
@@ -83,20 +82,20 @@ class BloqueadoEnRevision(Estado):
         # cerrar cambio actual si existe (buscar en la lista de cambios)
         self.obtenerCambioEstadoActual(cambiosEstado, fechaHoraActual)
 
-        nuevo_estado = self.crearProximoEstado("Rechazado")
+        nuevoEstado = self.crearProximoEstado("Rechazado")
 
-        nuevo_cambio = self.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
+        nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
 
         # actualizar estado en el contexto
         try:
-            evento.setEstadoActual(nuevo_estado)
+            evento.setEstadoActual(nuevoEstado)
         except (AttributeError, TypeError):
-            evento.setEstado(nuevo_estado)
+            evento.setEstado(nuevoEstado)
         try:
-            evento.setCambioEstadoActual(nuevo_cambio)
+            evento.setCambioEstadoActual(nuevoCambio)
         except Exception:
             try:
-                evento._cambioEstadoActual = nuevo_cambio
+                evento._cambioEstadoActual = nuevoCambio
             except Exception:
                 pass
 
@@ -109,20 +108,20 @@ class BloqueadoEnRevision(Estado):
         # cerrar cambio actual si existe (buscar en la lista de cambios)
         self.obtenerCambioEstadoActual(cambiosEstado, fechaHoraActual)
 
-        nuevo_estado = self.crearProximoEstado("ConfirmadoPorPersonal")
+        nuevoEstado = self.crearProximoEstado("ConfirmadoPorPersonal")
 
-        nuevo_cambio = self.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
+        nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
 
         # actualizar estado en el contexto
         try:
-            evento.setEstadoActual(nuevo_estado)
+            evento.setEstadoActual(nuevoEstado)
         except (AttributeError, TypeError):
-            evento.setEstado(nuevo_estado)
+            evento.setEstado(nuevoEstado)
         try:
-            evento.setCambioEstadoActual(nuevo_cambio)
+            evento.setCambioEstadoActual(nuevoCambio)
         except Exception:
             try:
-                evento._cambioEstadoActual = nuevo_cambio
+                evento._cambioEstadoActual = nuevoCambio
             except Exception:
                 pass
 
@@ -135,19 +134,19 @@ class BloqueadoEnRevision(Estado):
         # cerrar cambio actual si existe (buscar en la lista de cambios)
         self.obtenerCambioEstadoActual(cambiosEstado, fechaHoraActual)
 
-        nuevo_estado = self.crearProximoEstado("Derivado")
+        nuevoEstado = self.crearProximoEstado("Derivado")
 
-        nuevo_cambio = self.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
+        nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
 
         # actualizar estado en el contexto
         try:
-            evento.setEstadoActual(nuevo_estado)
+            evento.setEstadoActual(nuevoEstado)
         except (AttributeError, TypeError):
-            evento.setEstado(nuevo_estado)
+            evento.setEstado(nuevoEstado)
         try:
-            evento.setCambioEstadoActual(nuevo_cambio)
+            evento.setCambioEstadoActual(nuevoCambio)
         except Exception:
             try:
-                evento._cambioEstadoActual = nuevo_cambio
+                evento._cambioEstadoActual = nuevoCambio
             except Exception:
                 pass

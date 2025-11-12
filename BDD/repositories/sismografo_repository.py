@@ -51,8 +51,10 @@ class SismografoRepository:
                 muestras.append(MuestraSismica(m.fecha_hora_muestra, detalles))
 
             estado = None
-            if s.estado:
-                estado = Estado.from_name(s.estado.nombre_estado, s.estado.ambito)
+            estado_nombre = getattr(s, 'estado_nombre', None)
+            estado_ambito = getattr(s, 'estado_ambito', None)
+            if estado_nombre:
+                estado = Estado.from_name(estado_nombre, estado_ambito)
 
             serie = SerieTemporal(
                 s.fecha_hora_inicio_registro_muestras,

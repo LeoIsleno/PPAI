@@ -49,9 +49,6 @@ class GestorRevisionManual:
         Este método recibe un `Usuario` y lo pasa a `EventoSismico.bloquear`, que se
         encargará de registrar el empleado asociado.
         """
-        # La operación de bloqueo delega en el dominio; el dominio gestiona
-        # el cambio de estado y el registro del responsable. Ya no se
-        # devuelve ni se almacena un "último cambio" aquí.
         evento:EventoSismico = self.__eventoSismicoSeleccionado
         evento.bloquear(self._fechaHoraActual, self._usuarioLogueado)
 
