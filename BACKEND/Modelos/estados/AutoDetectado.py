@@ -10,9 +10,6 @@ class AutoDetectado(Estado):
     def getNombreEstado(self):
         return "Auto-detectado"
 
-    def esAutoDetectado(self):
-        return True
-
     def bloquear(self, evento, fechaHoraActual, usuario):
         """Transición desde AutoDetectado -> BloqueadoEnRevision.
 

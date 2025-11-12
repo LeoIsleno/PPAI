@@ -17,5 +17,5 @@ class Rol:
     def setDescripcion(self, descripcion: str):
         self.__descripcion = descripcion
 
-    def esAdministradorSismos(self):
+def esAdministradorSismos(self):
         return self.__nombre == 'Administrador de Sismos'

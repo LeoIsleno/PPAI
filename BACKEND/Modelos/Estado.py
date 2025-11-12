@@ -44,37 +44,6 @@ class Estado(ABC):
     def anular(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
 
-    # Métodos de verificación de estado (pueden ser sobreescritos).
-    def esAutoDetectado(self):
-        return False
-
-    def esAutoConfirmado(self):
-        return False
-
-    def esPendienteDeCierre(self):
-        return False
-
-    def esDerivado(self):
-        return False
-
-    def esConfirmadoPorPersonal(self):
-        return False
-
-    def esCerrado(self):
-        return False
-
-    def esRechazado(self):
-        return False
-
-    def esBloqueadoEnRevision(self):
-        return False
-
-    def esPendienteDeRevision(self):
-        return False
-
-    def esSinRevision(self):
-        return False
-
     def esAmbitoEventoSismico(self):
         return self.getAmbito() == "EventoSismico"
 
