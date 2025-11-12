@@ -10,8 +10,6 @@ class AutoConfirmado(Estado):
     def getNombreEstado(self):
         return "Auto-confirmado"
 
-    def esAutoConfirmado(self):
-        return True
 
     def derivar(self, evento, fechaHoraActual, usuario):
         """Transición desde AutoConfirmado -> Derivado."""

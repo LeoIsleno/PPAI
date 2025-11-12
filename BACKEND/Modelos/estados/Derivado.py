@@ -7,8 +7,6 @@ class Derivado(Estado):
     def __init__(self, ambito=None):
         super().__init__("Derivado", ambito)
 
-    def esDerivado(self):
-        return True
 
     def confirmar(self, evento, fechaHoraActual, usuario):
         """Transición desde Derivado -> ConfirmadoPorPersonal."""
