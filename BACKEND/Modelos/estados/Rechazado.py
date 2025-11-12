@@ -10,3 +10,6 @@ class Rechazado(Estado):
     def getNombreEstado(self):
         return "Rechazado"
 
+    def esRechazado(self):
+        return True
+

@@ -1,9 +1,15 @@
 from .DetalleMuestraSismica import DetalleMuestraSismica
 
 class MuestraSismica:
-    def __init__(self, fechaHoraMuestra, detalleMuestraSismica:DetalleMuestraSismica):
+    def __init__(self, fechaHoraMuestra, detalleMuestraSismica: DetalleMuestraSismica | list = None):
         self.__fechaHoraMuestra = fechaHoraMuestra
-        self.__detalleMuestraSismica = detalleMuestraSismica
+        # Normalizar detalleMuestraSismica a una lista interna para un manejo uniforme
+        if detalleMuestraSismica is None:
+            self.__detalleMuestraSismica = []
+        elif isinstance(detalleMuestraSismica, list):
+            self.__detalleMuestraSismica = detalleMuestraSismica
+        else:
+            self.__detalleMuestraSismica = [detalleMuestraSismica]
 
 #Fecha y hora de la muestra
     def getFechaHoraMuestra(self):

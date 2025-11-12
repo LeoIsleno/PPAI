@@ -10,14 +10,15 @@ class BloqueadoEnRevision(Estado):
     def getNombreEstado(self):
         return "Bloqueado en Revisión"
 
+    def esBloqueado(self):
+        """Indica que este estado representa un bloqueo para revisión."""
+        return True
+
     def rechazar(self, evento_sismico, fecha_hora_actual, usuario):
         # 1. Finalizar el estado actual
         cambio_estado_actual = evento_sismico.obtenerCambioEstadoActual()
         if cambio_estado_actual:
-            try:
-                cambio_estado_actual.setFechaHoraFin(fecha_hora_actual)
-            except (AttributeError, TypeError):
-                pass
+            cambio_estado_actual.setFechaHoraFin(fecha_hora_actual)
 
         # 2. Crear el próximo estado
         proximo_estado = self.crearProximoEstado("Rechazado")
@@ -35,10 +36,7 @@ class BloqueadoEnRevision(Estado):
     def confirmar(self, evento_sismico, fecha_hora_actual, usuario):
         cambio_estado_actual = evento_sismico.obtenerCambioEstadoActual()
         if cambio_estado_actual:
-            try:
-                cambio_estado_actual.setFechaHoraFin(fecha_hora_actual)
-            except (AttributeError, TypeError):
-                pass
+            cambio_estado_actual.setFechaHoraFin(fecha_hora_actual)
 
         proximo_estado = self.crearProximoEstado("ConfirmadoPorPersonal")
         nuevo_cambio_estado = self.crearCambioEstado(proximo_estado, fecha_hora_actual, usuario)
@@ -52,10 +50,7 @@ class BloqueadoEnRevision(Estado):
     def derivar(self, evento_sismico, fecha_hora_actual, usuario):
         cambio_estado_actual = evento_sismico.obtenerCambioEstadoActual()
         if cambio_estado_actual:
-            try:
-                cambio_estado_actual.setFechaHoraFin(fecha_hora_actual)
-            except (AttributeError, TypeError):
-                pass
+            cambio_estado_actual.setFechaHoraFin(fecha_hora_actual)
 
         proximo_estado = self.crearProximoEstado("Derivado")
         nuevo_cambio_estado = self.crearCambioEstado(proximo_estado, fecha_hora_actual, usuario)
@@ -69,15 +64,19 @@ class BloqueadoEnRevision(Estado):
     def crearProximoEstado(self, tipo_estado):
         # Importar localmente para evitar problemas de import circular y
         # permitir que cada estado se resuelva en tiempo de ejecución.
+        # Las clases de estado esperan solo el parámetro `ambito` opcional
+        # (el nombre se establece internamente en cada clase). Por lo tanto
+        # instanciamos pasando el ámbito actual del estado.
+        ambito = self.getAmbito()
         if tipo_estado == "Rechazado":
             from .Rechazado import Rechazado
-            return Rechazado("Rechazado", "Evento Sismico")
+            return Rechazado(ambito)
         elif tipo_estado == "ConfirmadoPorPersonal":
             from .ConfirmadoPorPersonal import ConfirmadoPorPersonal
-            return ConfirmadoPorPersonal("Confirmado por Personal", "Evento Sismico")
+            return ConfirmadoPorPersonal(ambito)
         elif tipo_estado == "Derivado":
             from .Derivado import Derivado
-            return Derivado("Derivado", "Evento Sismico")
+            return Derivado(ambito)
         return None
 
     def crearCambioEstado(self, estado, fecha_hora_inicio, usuario):

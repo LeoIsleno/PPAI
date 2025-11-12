@@ -30,41 +30,19 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 gestor = GestorRevisionManual()
 
 # Inicializar datos
-try:
-    database.init_db()
-except Exception:
-    pass
+database.init_db()
 
 sismografos_persistentes = []
-try:
-    provider = ListaSismografos(usuario)
-    sismografos_persistentes = getattr(provider, 'sismografos', []) or []
-except Exception:
-    pass
+provider = ListaSismografos(usuario)
+sismografos_persistentes = getattr(provider, 'sismografos', []) or []
 
-eventos_persistentes = []
-try:
-    eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos(sismografos_persistentes, usuario)
-except Exception:
-    pass
+eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos(sismografos_persistentes, usuario)
 
-lista_alcances = []
-try:
-    lista_alcances = ListarEventosSismicos.obtener_alcances()
-except Exception:
-    pass
+lista_alcances = ListarEventosSismicos.obtener_alcances()
 
-lista_origenes = []
-try:
-    lista_origenes = ListarEventosSismicos.obtener_origenes()
-except Exception:
-    pass
+lista_origenes = ListarEventosSismicos.obtener_origenes()
 
-estados = []
-try:
-    estados = ListarEventosSismicos.obtener_estados()
-except Exception:
-    pass
+estados = ListarEventosSismicos.obtener_estados()
 
 @app.route('/eventos', methods=['POST'])
 def seleccionar_evento():

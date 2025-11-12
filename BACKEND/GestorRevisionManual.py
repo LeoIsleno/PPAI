@@ -27,24 +27,13 @@ class GestorRevisionManual:
     def buscarEventosAutoDetectados(self, eventos):
         eventos_auto_detectado = []
         for evento in eventos:
-            try:
-                estado = None
-                if hasattr(evento, 'getEstadoActual'):
-                    estado = evento.getEstadoActual()
-                if estado is not None and hasattr(estado, 'esAutoDetectado') and estado.esAutoDetectado():
-                    eventos_auto_detectado.append(evento)
-            except Exception:
-                # Ignorar objetos mal formados en la colección
-                continue
+            estado = evento.getEstadoActual()
+            if estado is not None and estado.esAutoDetectado():
+                eventos_auto_detectado.append(evento)
         return eventos_auto_detectado
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
-        try:
-            return sorted(eventos, key=lambda ev: ev.getFechaHoraOcurrencia() or datetime.min, reverse=True)
-        except Exception:
-            # En caso de que la lista no contenga EventoSismico u ocurra un
-            # error al acceder a la fecha, devolver la lista tal cual.
-            return eventos
+        return sorted(eventos, key=lambda ev: ev.getFechaHoraOcurrencia() or datetime.min, reverse=True)
 
     def obtenerFechaHoraActual(self):
         return datetime.now()
@@ -278,10 +267,7 @@ class GestorRevisionManual:
                 maybe_num = raw_magn.get('numero')
             else:
                 maybe_num = raw_magn
-            try:
-                num = float(maybe_num) if maybe_num is not None else None
-            except (ValueError, TypeError):
-                num = None
+            num = float(maybe_num) if maybe_num is not None else None
             if num is not None:
                 # crear o actualizar objeto MagnitudRichter
                 if evento.getMagnitud() is None:
@@ -291,13 +277,25 @@ class GestorRevisionManual:
         if 'alcanceSismo' in data:
             alcances = lista_alcances
             alcance = next((a for a in alcances if a.getNombre() == data['alcanceSismo']), None)
+            # Si no existe un objeto de dominio correspondiente en la lista
+            # (por ejemplo cuando el frontend envía strings simples), crear
+            # un objeto `AlcanceSismo` ligero para asignarlo al evento.
             if alcance:
                 evento.setAlcanceSismo(alcance)
+            else:
+                from Modelos.AlcanceSismo import AlcanceSismo
+                # data['alcanceSismo'] puede ser None o string; solo crear si existe
+                if data['alcanceSismo']:
+                    evento.setAlcanceSismo(AlcanceSismo(None, data['alcanceSismo']))
         if 'origenGeneracion' in data:
             origenes = lista_origenes
             origen = next((o for o in origenes if o.getNombre() == data['origenGeneracion']), None)
             if origen:
                 evento.setOrigenGeneracion(origen)
+            else:
+                from Modelos.OrigenDeGeneracion import OrigenDeGeneracion
+                if data['origenGeneracion']:
+                    evento.setOrigenGeneracion(OrigenDeGeneracion(data['origenGeneracion'], None))
         # --- Actualiza el evento en la lista persistente si es necesario ---
         for idx, ev in enumerate(eventos_persistentes):
             if ev is evento:

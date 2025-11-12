@@ -5,10 +5,10 @@ from .Usuario import Usuario
 
 class CambioEstado:
     def __init__(self, fechaHoraInicio: datetime.datetime, estado: Estado, usuario: Usuario, fechaHoraFin: datetime.datetime = None):
-        self.__fechaHoraInicio = fechaHoraInicio  # Antes: fechaHoraDesde
-        self.__fechaHoraFin = fechaHoraFin        # Antes: fechaHoraHasta
+        self.__fechaHoraInicio = fechaHoraInicio  
+        self.__fechaHoraFin = fechaHoraFin        
         self.__estado = estado
-        self.__usuario = usuario  # Usuario que hizo el cambio
+        self.__usuario = usuario  
 
     # FechaHoraInicio
     def getFechaHoraInicio(self):
