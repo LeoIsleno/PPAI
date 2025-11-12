@@ -139,6 +139,8 @@ class PantallaRevisionManual {
 
     async mostrarEventosSismicos() {
         const select = document.getElementById('evento');
+        const dropdownBtn = document.getElementById('eventoDropdownBtn');
+        const dropdownMenu = document.getElementById('eventoDropdownMenu');
         const mensaje = document.getElementById('mensajeEventos');
         try {
             // show loading and disable controls
@@ -150,12 +152,17 @@ class PantallaRevisionManual {
             const response = await fetch(`${API_BASE}/api/eventos`);
             const eventos = await response.json();
 
+            // populate hidden native select for compatibility
             select.innerHTML = '';
             const defaultOption = document.createElement('option');
             defaultOption.value = '';
             defaultOption.selected = true;
             defaultOption.textContent = 'Seleccione un evento sísmico...';
             select.appendChild(defaultOption);
+
+            // clear custom dropdown
+            if (dropdownBtn) dropdownBtn.textContent = 'Seleccione un evento sísmico...';
+            if (dropdownMenu) dropdownMenu.innerHTML = '';
 
             if (eventos.length === 0) {
                 mensaje.textContent = 'No hay eventos sísmicos disponibles.';
@@ -169,7 +176,27 @@ class PantallaRevisionManual {
                     option.value = JSON.stringify(evento);
                     option.textContent = texto;
                     select.appendChild(option);
+
+                    // add to custom dropdown
+                    if (dropdownMenu) {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<a class="dropdown-item" href="#" data-value='${JSON.stringify(evento)}'>${texto}</a>`;
+                        dropdownMenu.appendChild(li);
+                    }
                 });
+
+                // add click listeners to dropdown items
+                if (dropdownMenu) {
+                    dropdownMenu.querySelectorAll('.dropdown-item').forEach(a => {
+                        a.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            const val = a.getAttribute('data-value');
+                            // set hidden select value
+                            select.value = val;
+                            if (dropdownBtn) dropdownBtn.textContent = a.textContent;
+                        });
+                    });
+                }
             
             }
         } catch (error) {
@@ -527,6 +554,14 @@ class PantallaRevisionManual {
                     <i class="bi bi-map me-2"></i>
                     Ver Mapa
                 </button>`;
+            // attach click listener to the button to load the map/photo
+            const btn = document.getElementById('btnMapa');
+            if (btn) {
+                btn.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    this.tomarSeleccionDeOpcionMapa();
+                });
+            }
         }
     }
 
@@ -534,9 +569,56 @@ class PantallaRevisionManual {
     async tomarSeleccionDeOpcionMapa() {
         try {
             this.showLoading('Cargando mapa...');
-            const response = await fetch(`${API_BASE}/mapa`)
-            const data = await response.json();
-            alert(data);
+            // Load allowed image names from manifest in /static/maps/manifest.json
+            let candidates = [];
+            try {
+                const mresp = await fetch('/static/maps/manifest.json');
+                if (mresp.ok) {
+                    const mjson = await mresp.json();
+                    if (mjson && Array.isArray(mjson.images) && mjson.images.length > 0) {
+                        candidates = mjson.images.slice();
+                    }
+                }
+            } catch (e) {
+                // ignore and fallback
+            }
+
+            if (!candidates || candidates.length === 0) {
+                alert('No hay entradas en el manifiesto de mapas (/static/maps/manifest.json). Coloque el archivo manifest.json con la propiedad "images": ["archivo.png", ...] en FRONTEND/static/maps/.');
+                return;
+            }
+
+            let foundUrl = null;
+            for (const name of candidates) {
+                try {
+                    const url = `/static/maps/${encodeURIComponent(name)}`;
+                    const resp = await fetch(url, { method: 'GET' });
+                    if (resp.ok) {
+                        const ct = (resp.headers.get('content-type') || '').toLowerCase();
+                        if (ct.startsWith('image/')) { foundUrl = url; break; }
+                    }
+                } catch (e) {
+                    // ignore and try next
+                }
+            }
+
+            if (!foundUrl) {
+                alert('No se encontraron las imágenes listadas en /static/maps/. Coloque los archivos indicados en FRONTEND/static/maps/.');
+                return;
+            }
+
+            const imgEl = document.getElementById('mapModalImg');
+            const capEl = document.getElementById('mapModalCaption');
+            if (imgEl) imgEl.src = foundUrl;
+            if (capEl) capEl.textContent = '';
+
+            const modalEl = document.getElementById('mapModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            } else {
+                window.open(foundUrl, '_blank');
+            }
         } catch (e) {
             console.error('Error cargando mapa', e);
             alert('Error cargando mapa');

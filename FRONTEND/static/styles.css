@@ -700,3 +700,12 @@ body {
     }
 }
 
+/* Scoped fix: allow dropdown menus inside specific cards to overflow (avoid clipping) */
+.card-seismic.dropdown-overflow-visible {
+    /* keep card visuals but allow children (dropdown menu) to render outside */
+    overflow: visible;
+}
+.card-seismic.dropdown-overflow-visible .dropdown-menu {
+    z-index: 2050; /* place above other content */
+}
+

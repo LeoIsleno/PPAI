@@ -141,7 +141,9 @@ class Estado(ABC):
         if estado_clase:
             return estado_clase(ambito)
 
-        # Nombre no reconocido: hacer el fallo explícito en vez de usar un fallback
+        if ambito is not None and ambito != 'EventoSismico':
+            return Estado(nombre, ambito)
+
         raise ValueError(f"Estado desconocido: '{nombre}'")
 
 

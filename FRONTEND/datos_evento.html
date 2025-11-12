@@ -213,6 +213,22 @@
         </div>
     </footer>
 
+    <!-- Modal para mostrar el mapa / foto -->
+    <div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mapModalLabel">Mapa / Foto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body text-center p-3">
+                    <img id="mapModalImg" src="" alt="Mapa" style="max-width:100%; height:auto; border-radius:8px;" />
+                    <div id="mapModalCaption" class="small text-muted mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="static/scriptDatosEvento.js"></script>
     <script src="static/auth.js"></script>
