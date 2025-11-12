@@ -17,4 +17,5 @@ class AlcanceSismo:
 
     def setDescripcion(self, descripcion):
         self.__descripcion = descripcion
+    
 
