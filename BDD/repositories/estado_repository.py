@@ -25,31 +25,113 @@ class EstadoRepository:
         canonical = EstadoDom.from_name(raw_nombre, estado.getAmbito())
         nombre_canonical = canonical.getNombreEstado()
 
-        # Try to find an existing Estado by the canonical name
-        existente = db.query(orm_models.Estado).filter_by(nombre_estado=nombre_canonical).first()
-
-        if existente:
-            existente.ambito = estado.getAmbito()
-            return existente
+        # Try to find an existing Estado row among concrete estado tables
+        # by canonical name. We query each concrete table until we find one.
+        existente = None
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        for tbl in concrete_tables:
+            existente = db.query(tbl).filter_by(nombre_estado=nombre_canonical).first()
+            if existente:
+                existente.ambito = estado.getAmbito()
+                return existente
 
         # If not found, create a new canonical Estado row and persist it.
         # We handle possible race conditions (concurrent inserts) by catching
         # IntegrityError and re-querying the existing row.
         ambito_val = estado.getAmbito()
-        nuevo = orm_models.Estado(nombre_estado=nombre_canonical, ambito=ambito_val)
+
+        # Map canonical display names to concrete ORM subclasses so that
+        # a dedicated table for each concrete state is created (joined
+        # table inheritance). If no concrete subclass is found, fall back
+        # to the base Estado table (safe for unknown/custom states).
+        mapping = {
+            'Auto-detectado': orm_models.EstadoAutoDetectado,
+            'AutoDetectado': orm_models.EstadoAutoDetectado,
+            'Auto-confirmado': orm_models.EstadoAutoConfirmado,
+            'AutoConfirmado': orm_models.EstadoAutoConfirmado,
+            'Pendiente de Cierre': orm_models.EstadoPendienteDeCierre,
+            'PendienteDeCierre': orm_models.EstadoPendienteDeCierre,
+            'Derivado': orm_models.EstadoDerivado,
+            'Confirmado por Personal': orm_models.EstadoConfirmadoPorPersonal,
+            'ConfirmadoPorPersonal': orm_models.EstadoConfirmadoPorPersonal,
+            'Cerrado': orm_models.EstadoCerrado,
+            'Rechazado': orm_models.EstadoRechazado,
+            'Bloqueado en Revisión': orm_models.EstadoBloqueadoEnRevision,
+            'BloqueadoEnRevision': orm_models.EstadoBloqueadoEnRevision,
+            'Pendiente de Revisión': orm_models.EstadoPendienteDeRevision,
+            'PendienteDeRevision': orm_models.EstadoPendienteDeRevision,
+            'SinRevision': orm_models.EstadoSinRevision,
+            'Sin Revisión': orm_models.EstadoSinRevision,
+        }
+
+        orm_cls = mapping.get(nombre_canonical)
+        if orm_cls:
+            nuevo = orm_cls(nombre_estado=nombre_canonical, ambito=ambito_val)
+        else:
+            # Unknown/custom estado: create a row in the "generic" table
+            # We don't have a generic table any more; create an instance on the
+            # EstadoAutoDetectado table as a last resort to persist the name.
+            nuevo = orm_models.EstadoAutoDetectado(nombre_estado=nombre_canonical, ambito=ambito_val)
         db.add(nuevo)
         # flush so the row is written and an id is assigned within caller's transaction
         db.flush()
         return nuevo
 
     @staticmethod
-    def get_by_id(db: Session, id: int) -> Optional[orm_models.Estado]:
-        return db.query(orm_models.Estado).get(id)
+    def get_by_id(db: Session, id: int):
+        # Search across concrete estado tables for the given id and return
+        # the first match. This is a pragmatic fallback since ids are not
+        # globally unique across separate tables.
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        for tbl in concrete_tables:
+            found = db.query(tbl).get(id)
+            if found:
+                return found
+        return None
 
     @staticmethod
     def list_all(db: Session):
-        return db.query(orm_models.Estado).all()
+        # Return concatenation of all concrete estado rows so callers can
+        # iterate over objects that expose `nombre_estado` and `ambito`.
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        results = []
+        for tbl in concrete_tables:
+            results.extend(db.query(tbl).all() or [])
+        return results
 
     @staticmethod
-    def delete(db: Session, estado: orm_models.Estado):
+    def delete(db: Session, estado):
         db.delete(estado)
