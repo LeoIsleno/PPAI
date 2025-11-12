@@ -43,7 +43,7 @@ class Empleado:
 	def setRol(self, rol: Rol):
 		self.__rol = rol
 
-	def esAdministradorSismos(self):
+def esAdministradorSismos(self):
 		"""
 		Devuelve True si el empleado tiene asignado un rol cuyo nombre es
 		'Administrador de Sismos'. Maneja casos donde rol sea None.

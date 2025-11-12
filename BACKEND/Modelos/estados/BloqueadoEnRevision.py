@@ -10,9 +10,6 @@ class BloqueadoEnRevision(Estado):
     def getNombreEstado(self):
         return "Bloqueado en Revisión"
 
-    def esBloqueadoEnRevision(self):
-        return True
-
     def rechazar(self, evento_sismico, fecha_hora_actual, usuario):
         # 1. Finalizar el estado actual
         cambio_estado_actual = evento_sismico.obtenerCambioEstadoActual()

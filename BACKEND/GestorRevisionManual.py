@@ -25,18 +25,8 @@ class GestorRevisionManual:
         return [e.mostrarDatosEventoSismico() for e in eventos_ordenados]
 
     def buscarEventosAutoDetectados(self, eventos):
-        """
-        Retorna la lista de objetos `EventoSismico` cuyo estado actual
-        responde `esAutoDetectado()`.
-
-        Usamos la delegación del patrón State: la consulta `estaAutoDetectado`
-        del `EventoSismico` delega a `estadoActual.esAutoDetectado()`.
-        """
         eventos_auto_detectado = []
         for evento in eventos:
-            # Acceder explícitamente al estado actual y preguntar al estado
-            # si es AutoDetectado. Evitamos usar el método de conveniencia
-            # `evento.estaAutoDetectado()` para cumplir la petición.
             try:
                 estado = None
                 if hasattr(evento, 'getEstadoActual'):
@@ -49,22 +39,12 @@ class GestorRevisionManual:
         return eventos_auto_detectado
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
-        """
-        Ordena una lista de `EventoSismico` por su fecha de ocurrencia
-        (más recientes primero).
-        """
         try:
             return sorted(eventos, key=lambda ev: ev.getFechaHoraOcurrencia() or datetime.min, reverse=True)
         except Exception:
             # En caso de que la lista no contenga EventoSismico u ocurra un
             # error al acceder a la fecha, devolver la lista tal cual.
             return eventos
-
-    def buscarEstadoBloqueadoEnRevision(self, estados):
-        for estado in estados:
-            if estado.esAmbitoEventoSismico() and estado.esBloqueadoEnRevision():
-                return estado
-        return None
 
     def obtenerFechaHoraActual(self):
         return datetime.now()
@@ -141,26 +121,7 @@ class GestorRevisionManual:
         return None
         
 
-    def obtenerEstadoRechazado(self, estados):
-        # Recorre todos los estados creados y verifica que sea de ámbito EventoSismico y que sea Rechazado
-        for estado in estados:
-            if estado.esAmbitoEventoSismico() and estado.esRechazado():
-                return estado
-        return None
 
-    def obtenerEstadoConformado(self, estados):
-        """Busca el estado ConfirmadoPorPersonal en la lista de estados"""
-        for estado in estados:
-            if estado.esAmbitoEventoSismico() and estado.esConfirmadoPorPersonal():
-                return estado
-        return None
-
-    def obtenerEstadoDerivado(self, estados):
-        """Busca el estado Derivado en la lista de estados"""
-        for estado in estados:
-            if estado.esAmbitoEventoSismico() and estado.esDerivado():
-                return estado
-        return None
 
     def rechazarEventoSismico(self, evento: EventoSismico, usuario, fecha_hora):
         evento.rechazar(fecha_hora, usuario)
