@@ -68,35 +68,31 @@ except Exception:
 
 @app.route('/eventos', methods=['POST'])
 def seleccionar_evento():
-    try:
-        data = request.get_json()
-        resultado = gestor.tomarSeleccionDeEventoSismico(
-            eventos_persistentes,
-            sismografos_persistentes,
-            data,
-            usuario_logueado,
-            estados
-        )
-        
-        if isinstance(resultado, dict) and not resultado.get('success', True):
-            status = resultado.pop('status_code', 500)
-            return jsonify(resultado), status
-        
-        if not isinstance(resultado, tuple):
-            return jsonify({'success': False, 'error': 'Error inesperado'}), 500
-        
-        datos_evento, series_temporales = resultado
-        
-        return jsonify({
-            'success': True,
-            'evento': datos_evento,
-            'series_temporales': series_temporales,
-            'alcances_sismo': ["Local", "Regional", "Global"],
-            'origenes_generacion': ["Tectónico", "Volcánico", "Artificial"]
-        })
-    except Exception as e:
-        # Avoid printing/logging to console. Return a generic error to the caller.
-        return jsonify({'success': False, 'error': 'Error interno del servidor'}), 500
+    data = request.get_json()
+    resultado = gestor.tomarSeleccionDeEventoSismico(
+        eventos_persistentes,
+        sismografos_persistentes,
+        data,
+        usuario_logueado,
+        estados
+    )
+
+    if isinstance(resultado, dict) and not resultado.get('success', True):
+        status = resultado.pop('status_code', 500)
+        return jsonify(resultado), status
+
+    if not isinstance(resultado, tuple):
+        return jsonify({'success': False, 'error': 'Error inesperado'}), 500
+
+    datos_evento, series_temporales = resultado
+
+    return jsonify({
+        'success': True,
+        'evento': datos_evento,
+        'series_temporales': series_temporales,
+        'alcances_sismo': ["Local", "Regional", "Global"],
+        'origenes_generacion': ["Tectónico", "Volcánico", "Artificial"]
+    })
 
 @app.route('/api/eventos', methods=['GET'])
 def api_eventos():

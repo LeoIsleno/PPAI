@@ -3,9 +3,9 @@ from ..Estado import Estado
 
 class PendienteDeRevision(Estado):
     """Estado PendienteDeRevision: evento pendiente de revisión manual."""
-    
+
     def __init__(self, ambito=None):
-        super().__init__(ambito)
+        super().__init__("Pendiente de Revisión", ambito)
 
     def getNombreEstado(self):
         return "Pendiente de Revisión"
@@ -16,25 +16,28 @@ class PendienteDeRevision(Estado):
     def bloquear(self, evento, fechaHoraActual, usuario):
         """Transición desde PendienteDeRevision -> BloqueadoEnRevision."""
         from .BloqueadoEnRevision import BloqueadoEnRevision
-        
+
         nuevo_estado = BloqueadoEnRevision(self.getAmbito())
-        
+
         # cerrar cambio actual si existe
-        cambio_actual = evento.obtnerEstadoActual()
+        cambio_actual = evento.obtenerCambioEstadoActual()
         if cambio_actual:
-            cambio_actual.setFechaHoraFin(fechaHoraActual)
+            try:
+                cambio_actual.setFechaHoraFin(fechaHoraActual)
+            except (AttributeError, TypeError):
+                pass
 
         # actualizar estado en el contexto
         try:
             evento.setEstadoActual(nuevo_estado)
-        except Exception:
+        except (AttributeError, TypeError):
             evento.setEstado(nuevo_estado)
 
         # crear el nuevo cambio
         nuevo_cambio = evento.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
         try:
             evento.setCambioEstadoActual(nuevo_cambio)
-        except Exception:
+        except (AttributeError, TypeError):
             pass
 
         return nuevo_cambio
@@ -42,25 +45,28 @@ class PendienteDeRevision(Estado):
     def anular(self, evento, fechaHoraActual, usuario):
         """Transición desde PendienteDeRevision -> SinRevision (anular)."""
         from .SinRevision import SinRevision
-        
+
         nuevo_estado = SinRevision(self.getAmbito())
-        
+
         # cerrar cambio actual si existe
-        cambio_actual = evento.obtnerEstadoActual()
+        cambio_actual = evento.obtenerCambioEstadoActual()
         if cambio_actual:
-            cambio_actual.setFechaHoraFin(fechaHoraActual)
+            try:
+                cambio_actual.setFechaHoraFin(fechaHoraActual)
+            except (AttributeError, TypeError):
+                pass
 
         # actualizar estado en el contexto
         try:
             evento.setEstadoActual(nuevo_estado)
-        except Exception:
+        except (AttributeError, TypeError):
             evento.setEstado(nuevo_estado)
 
         # crear el nuevo cambio
         nuevo_cambio = evento.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
         try:
             evento.setCambioEstadoActual(nuevo_cambio)
-        except Exception:
+        except (AttributeError, TypeError):
             pass
 
         return nuevo_cambio

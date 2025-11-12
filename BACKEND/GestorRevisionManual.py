@@ -17,19 +17,48 @@ class GestorRevisionManual:
         self._usuarioLogueado = None
 
     def opRegistrarResultadoRevisionManual(self, eventos):
-        eventos_auto_det = self.buscarEventosAutoDetectados(eventos)
-        return self.ordenarESPorFechaOcurrencia(eventos_auto_det)
+        # Obtener los eventos de dominio que están en estado AutoDetectado,
+        # ordenarlos por fecha de ocurrencia y devolver su representación
+        # para la vista (mostrarDatosEventoSismico).
+        eventos_auto = self.buscarEventosAutoDetectados(eventos)
+        eventos_ordenados = self.ordenarESPorFechaOcurrencia(eventos_auto)
+        return [e.mostrarDatosEventoSismico() for e in eventos_ordenados]
 
     def buscarEventosAutoDetectados(self, eventos):
+        """
+        Retorna la lista de objetos `EventoSismico` cuyo estado actual
+        responde `esAutoDetectado()`.
+
+        Usamos la delegación del patrón State: la consulta `estaAutoDetectado`
+        del `EventoSismico` delega a `estadoActual.esAutoDetectado()`.
+        """
         eventos_auto_detectado = []
         for evento in eventos:
-            if evento.estaAutoDetectado():
-                datos_evento = evento.mostrarDatosEventoSismico()
-                eventos_auto_detectado.append(datos_evento)
+            # Acceder explícitamente al estado actual y preguntar al estado
+            # si es AutoDetectado. Evitamos usar el método de conveniencia
+            # `evento.estaAutoDetectado()` para cumplir la petición.
+            try:
+                estado = None
+                if hasattr(evento, 'getEstadoActual'):
+                    estado = evento.getEstadoActual()
+                if estado is not None and hasattr(estado, 'esAutoDetectado') and estado.esAutoDetectado():
+                    eventos_auto_detectado.append(evento)
+            except Exception:
+                # Ignorar objetos mal formados en la colección
+                continue
         return eventos_auto_detectado
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
-        return sorted(eventos, key=lambda x: x[0], reverse=True)
+        """
+        Ordena una lista de `EventoSismico` por su fecha de ocurrencia
+        (más recientes primero).
+        """
+        try:
+            return sorted(eventos, key=lambda ev: ev.getFechaHoraOcurrencia() or datetime.min, reverse=True)
+        except Exception:
+            # En caso de que la lista no contenga EventoSismico u ocurra un
+            # error al acceder a la fecha, devolver la lista tal cual.
+            return eventos
 
     def buscarEstadoBloqueadoEnRevision(self, estados):
         for estado in estados:
@@ -40,23 +69,23 @@ class GestorRevisionManual:
     def obtenerFechaHoraActual(self):
         return datetime.now()
 
-    def bloquearEventoSismico(self, evento: EventoSismico, estado_bloqueado: Estado, fecha_hora: datetime, usuario):
+    def bloquearEventoSismico(self, evento: EventoSismico, fecha_hora: datetime, usuario):
         """
         Bloquea un evento sísmico cambiando su estado actual y registrando el cambio.
         Este método recibe un `Usuario` y lo pasa a `EventoSismico.bloquear`, que se
         encargará de registrar el empleado asociado.
         """
-        self.__ultimo_cambio = evento.bloquear(estado_bloqueado, fecha_hora, usuario)
+        # La operación de bloqueo delega en el dominio; el dominio gestiona
+        # el cambio de estado y el registro del responsable. Ya no se
+        # devuelve ni se almacena un "último cambio" aquí.
+        evento.bloquear(fecha_hora, usuario)
 
-        db = SessionLocal()
-        try:
-            EventoRepository.from_domain(db, evento)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
+        # Usar context managers para que la sesión y la transacción se manejen
+        # automáticamente (commit/rollback y close).
+        with SessionLocal() as db:
+            # `begin()` asegura commit automático o rollback en excepción
+            with db.begin():
+                EventoRepository.from_domain(db, evento)
 
         return True
     
@@ -68,14 +97,29 @@ class GestorRevisionManual:
 
 
     def validarDatosMinimosRequeridos(self, evento):
+        """
+        Verifica que el evento tenga los datos mínimos requeridos.
+        No captura excepciones generales aquí: si el dominio lanza una excepción
+        debe propagarse; las únicas excepciones manejadas explícitamente en
+        el gestor son las relativas a la persistencia (DB).
+
+        Devuelve {'success': True} cuando está OK, o un dict de error cuando falta
+        información requerida.
+        """
+        if evento is None:
+            return {'success': False, 'error': 'Evento inválido', 'status_code': 400}
+
         magn = None
-        try:
-            magn_obj = evento.getMagnitud()
-            magn = magn_obj.getNumero() if magn_obj else None
-        except Exception:
-            magn = None
+        magn_obj = evento.getMagnitud()
+        if magn_obj is not None:
+            # getNumero puede lanzar si el dominio está en un estado inconsistente;
+            # dejamos que se propague en ese caso (no atrapamos aquí).
+            magn = magn_obj.getNumero()
+
         if not (magn is not None and evento.getAlcanceSismo() and evento.getOrigenGeneracion()):
             return {'success': False, 'error': 'Faltan datos obligatorios del evento', 'status_code': 400}
+
+        return {'success': True}
         
     def buscarASLogueado(self, sesion:Sesion):
         """
@@ -118,61 +162,44 @@ class GestorRevisionManual:
                 return estado
         return None
 
-    def rechazarEventoSismico(self, evento: EventoSismico, usuario, estado_rechazado, fecha_hora, ult_cambio):
-        evento.rechazar(estado_rechazado, fecha_hora, usuario, ult_cambio)
+    def rechazarEventoSismico(self, evento: EventoSismico, usuario, fecha_hora):
+        evento.rechazar(fecha_hora, usuario)
 
-        db = SessionLocal()
-        try:
-            EventoRepository.from_domain(db, evento)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
+        with SessionLocal() as db:
+            with db.begin():
+                EventoRepository.from_domain(db, evento)
 
         return True
         
-    def confirmarEventoSismico(self, evento: EventoSismico, usuario, estado_aceptado, fecha_hora, ult_cambio):
+    def confirmarEventoSismico(self, evento: EventoSismico, usuario, fecha_hora):
         """
         Confirma un evento sísmico delegando en el dominio y persistiendo el cambio.
         Se mantiene la misma forma que `rechazarEventoSismico`: el método del gestor
         delega la lógica al dominio (`evento.confirmar`) y luego persiste usando
         `EventoRepository` dentro de una sesión.
         """
-        # Delegar la confirmación al dominio; se espera que esto devuelva/actualice
-        # el último cambio y pueda lanzar excepciones en caso de error.
-        self.__ultimo_cambio = evento.confirmar(estado_aceptado, fecha_hora, usuario, ult_cambio)
+        # Delegar la confirmación al dominio. El dominio actualizará el
+        # cambio/estado internamente; no guardamos un "último cambio" aquí.
+        evento.confirmar(fecha_hora, usuario)
 
-        db = SessionLocal()
-        try:
-            EventoRepository.from_domain(db, evento)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
+        with SessionLocal() as db:
+            with db.begin():
+                EventoRepository.from_domain(db, evento)
 
         return True
 
-    def derivarEventoSismico(self, evento: EventoSismico, usuario, estado_derivado, fecha_hora, ult_cambio):
+    def derivarEventoSismico(self, evento: EventoSismico, usuario, fecha_hora):
         """
         Deriva un evento sísmico a experto delegando en el dominio y persistiendo el cambio.
         Similar a confirmarEventoSismico y rechazarEventoSismico, delega la lógica al
         dominio (`evento.derivar`) y luego persiste usando EventoRepository.
         """
-        self.__ultimo_cambio = evento.derivar(estado_derivado, fecha_hora, usuario, ult_cambio)
+        # Delegar la derivación al dominio.
+        evento.derivar(fecha_hora, usuario)
 
-        db = SessionLocal()
-        try:
-            EventoRepository.from_domain(db, evento)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
+        with SessionLocal() as db:
+            with db.begin():
+                EventoRepository.from_domain(db, evento)
 
         return True
         
@@ -212,19 +239,16 @@ class GestorRevisionManual:
         self.__eventoSismicoSeleccionado = evento_seleccionado
 
         if evento_seleccionado:
-            # Buscar el estado 'BloqueadoEnRevision' para bloquear el evento
-            estado_bloqueado = self.buscarEstadoBloqueadoEnRevision(estados)
+            # El estado no se busca, se crea en la transición
             usuario = self.buscarASLogueado(usuario_logueado)
             # Verificar que el usuario esté autorizado (empleado con rol administrador)
             if usuario is None:
                 return {'success': False, 'error': 'Usuario no autorizado para bloquear eventos', 'status_code': 403}
             self._usuarioLogueado = usuario
             fec_hora = self.obtenerFechaHoraActual()
-            if not estado_bloqueado:
-                return {'success': False, 'error': 'Error al crear el estado bloqueado', 'status_code': 500}
 
             # Intentar bloquear el evento (cambiar su estado)
-            if self.bloquearEventoSismico(evento_seleccionado, estado_bloqueado, fec_hora, usuario):
+            if self.bloquearEventoSismico(evento_seleccionado, fec_hora, usuario):
                 evento_sismico = self.buscarDatosSismicos(evento_seleccionado)
                 series_temportales = self.buscarSeriesTemporales(evento_seleccionado, sismografos)
                 self.llamarCUGenerarSismograma(evento_seleccionado)
@@ -242,36 +266,36 @@ class GestorRevisionManual:
         accion = data.get('accion')
 
         if accion == 'rechazar':
-            self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
-
-            estado_rechazado = self.obtenerEstadoRechazado(estados)
+            valid = self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
+            if not valid.get('success'):
+                return valid
 
             fec_hora = self.obtenerFechaHoraActual()
-            
+
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_rechazado, fec_hora, self.__ultimo_cambio)
+            self.rechazarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, fec_hora)
             return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
         
         elif accion == 'confirmar':
-            self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
-
-            estado_conformado = self.obtenerEstadoConformado(estados)
+            valid = self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
+            if not valid.get('success'):
+                return valid
 
             fec_hora = self.obtenerFechaHoraActual()
-            
+
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.confirmarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_conformado, fec_hora, self.__ultimo_cambio)
+            self.confirmarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, fec_hora)
             return {'success': True, 'mensaje': 'Evento confirmado correctamente'}
         
         elif accion == 'experto':
-            self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
-
-            estado_derivado = self.obtenerEstadoDerivado(estados)
+            valid = self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
+            if not valid.get('success'):
+                return valid
 
             fec_hora = self.obtenerFechaHoraActual()
-            
+
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.derivarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, estado_derivado, fec_hora, self.__ultimo_cambio)
+            self.derivarEventoSismico(self.__eventoSismicoSeleccionado, self._usuarioLogueado, fec_hora)
             return {'success': True, 'mensaje': 'Evento derivado a experto correctamente'}
         
         else:
@@ -295,7 +319,7 @@ class GestorRevisionManual:
                 maybe_num = raw_magn
             try:
                 num = float(maybe_num) if maybe_num is not None else None
-            except Exception:
+            except (ValueError, TypeError):
                 num = None
             if num is not None:
                 # crear o actualizar objeto MagnitudRichter
@@ -319,16 +343,10 @@ class GestorRevisionManual:
                 eventos_persistentes[idx] = evento
                 break
         
-        db = SessionLocal()
-        try:
-            EventoRepository.from_domain(db, evento)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
-            
+        with SessionLocal() as db:
+            with db.begin():
+                EventoRepository.from_domain(db, evento)
+
         return {'success': True}
             
 

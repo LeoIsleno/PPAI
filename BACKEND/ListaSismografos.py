@@ -35,19 +35,13 @@ class ListaSismografos:
         from BDD.repositories.sismografo_repository import SismografoRepository
 
         try:
-            db = SessionLocal()
-            orm_sismos = db.query(orm_models.Sismografo).all()
-            self.sismografos: List[Sismografo] = [SismografoRepository.to_domain(s) for s in orm_sismos]
+            with SessionLocal() as db:
+                orm_sismos = db.query(orm_models.Sismografo).all()
+                self.sismografos: List[Sismografo] = [SismografoRepository.to_domain(s) for s in orm_sismos]
         except Exception as ex:
             # Error al cargar sismógrafos desde la base de datos; devolver lista vacía
             print("Error al cargar sismógrafos desde la base de datos; devolviendo lista vacía:", ex)
             self.sismografos = []
-        finally:
-            try:
-                db.close()
-            except Exception as ex:
-                # Ignorar fallo al cerrar la sesión de DB
-                print("Fallo al cerrar la sesión de DB en ListaSismografos.__init__:", ex)
 
     @staticmethod
     def _map_orm_sismografo_to_domain(orm_s) -> Sismografo:

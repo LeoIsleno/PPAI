@@ -1,13 +1,16 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
 
 class Estado(ABC):
-    """Clase abstracta base para todos los estados.
+    """Clase base para todos los estados.
 
-    Todos los estados concretos deben heredar de aquí. Provee las firmas
-    de los métodos que aparecen en los diagramas y helpers comunes.
+    Contiene el nombre del estado y el ámbito (p.ej. 'EventoSismico').
+    Las subclases concretas pueden sobreescribir los métodos de transición
+    si corresponden.
     """
-    def __init__(self, ambito=None):
+
+    def __init__(self, nombre: str = None, ambito: str = None):
+        self._nombre = nombre
         self._ambito = ambito
 
     def getAmbito(self):
@@ -16,31 +19,32 @@ class Estado(ABC):
     def setAmbito(self, ambito):
         self._ambito = ambito
 
-    @abstractmethod
     def getNombreEstado(self):
-        pass
+        return self._nombre
 
     # Operaciones que pueden implicar una transición de estado.
-    # Los estados concretos las implementarán cuando corresponda.
+    # Las subclases pueden cerrar el cambio de estado actual consultando
+    # directamente `evento.obtenerCambioEstadoActual()` cuando sea necesario.
     def bloquear(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
 
-    def rechazar(self, evento, fechaHoraActual, usuario, ult_cambio=None):
-        raise NotImplementedError()
+    def rechazar(self, evento, fechaHoraActual, usuario):
+        # Comportamiento por defecto: no hacer nada y devolver None.
+        return None
 
-    def confirmar(self, evento, fechaHoraActual, usuario, ult_cambio=None):
-        raise NotImplementedError()
-    
+    def confirmar(self, evento, fechaHoraActual, usuario):
+        return None
+
     def derivar(self, evento, fechaHoraActual, usuario):
-        raise NotImplementedError()
-    
+        return None
+
     def cerrar(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
-    
+
     def anular(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
 
-    # Métodos de verificación de estado
+    # Métodos de verificación de estado (pueden ser sobreescritos).
     def esAutoDetectado(self):
         return False
 
@@ -76,18 +80,23 @@ class Estado(ABC):
 
     @classmethod
     def from_name(cls, nombre: str, ambito=None):
-        """Fábrica: crea una instancia del estado concreto a partir de su nombre."""
+        """Fábrica: crea una instancia del estado concreto a partir de su nombre.
+
+        Este método importa las clases concretas del paquete `estados` y
+        construye la instancia usando la convención de que el constructor
+        acepta el parámetro `ambito` (el nombre se asigna internamente).
+        """
         from .estados import (
             AutoDetectado, AutoConfirmado, PendienteDeCierre, Derivado,
             ConfirmadoPorPersonal, Cerrado, Rechazado, BloqueadoEnRevision,
             PendienteDeRevision, SinRevision
         )
-        
+
         if nombre is None:
             return AutoDetectado(ambito)
-        
+
         n = nombre.strip()
-        
+
         # Mapeo de nombres a clases
         estados_map = {
             "Auto-detectado": AutoDetectado,
@@ -108,11 +117,11 @@ class Estado(ABC):
             "SinRevision": SinRevision,
             "Sin Revisión": SinRevision
         }
-        
+
         estado_clase = estados_map.get(n)
         if estado_clase:
             return estado_clase(ambito)
-        
+
         # Fallback a AutoDetectado si no se reconoce
         return AutoDetectado(ambito)
 

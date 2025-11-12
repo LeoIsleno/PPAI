@@ -69,8 +69,9 @@ class Sismografo:
                             'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
                             'nombreEstacion': self.__estacionSismologica.getNombre()
                         }
-            except Exception:
-                # Si alguna comparación falla, continuar con la siguiente serie
+            except (AttributeError, TypeError):
+                # Si alguna comparación falla por API faltante o tipo inesperado,
+                # continuar con la siguiente serie (no capturamos excepciones generales).
                 continue
         return None
 

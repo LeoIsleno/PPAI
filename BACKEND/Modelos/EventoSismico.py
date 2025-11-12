@@ -35,7 +35,7 @@ class EventoSismico:
                     if ce.getFechaHoraFin() is None:
                         self._cambioEstadoActual = ce
                         break
-        except Exception:
+        except (AttributeError, TypeError):
             # En casos donde los objetos no tienen la API esperada, dejamos None
             self._cambioEstadoActual = None
         self._serieTemporal = serieTemporal
@@ -216,11 +216,12 @@ class EventoSismico:
             datos_series.append(datos)
         return datos_series
     
-    def obtnerEstadoActual(self):
-        for cambio in self._cambiosEstado:
-            if cambio.esEstadoActual():
-                return cambio
-                
+    def obtenerCambioEstadoActual(self):
+        """
+        Obtiene el cambio de estado que se considera actual (sin fecha de fin).
+        """
+        return self._cambioEstadoActual
+
     def crearCambioEstado(self, estado: Estado, fechaHoraActual: datetime, usuario):
         """
         Crea un CambioEstado registrando el `Usuario` que efectuó el cambio.
@@ -229,7 +230,7 @@ class EventoSismico:
         self._cambiosEstado.append(nuevo_cambio)
         return nuevo_cambio
     
-    def bloquear (self, estadoBloqueado: Estado, fechaHoraActual: datetime, usuario):
+    def bloquear (self, fechaHoraActual: datetime, usuario):
         """Realiza el bloqueo del evento.
 
         Delegamos la lógica de transición al objeto `Estado` recibido.
@@ -240,26 +241,26 @@ class EventoSismico:
             raise RuntimeError("Evento sin estado actual: no se puede bloquear")
         return self._estadoActual.bloquear(self, fechaHoraActual, usuario)
     
-    def rechazar(self, estadoRechazado: Estado, fechaHoraActual: datetime, usuario, ult_cambio: CambioEstado):
+    def rechazar(self, fechaHoraActual: datetime, usuario):
         """
         Cambia el estado del evento a 'Rechazado', cierra el estado actual y registra el cambio.
         """
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede rechazar")
-        return self._estadoActual.rechazar(self, fechaHoraActual, usuario, ult_cambio)
+        return self._estadoActual.rechazar(self, fechaHoraActual, usuario)
 
-    def confirmar(self, estadoConfirmado: Estado, fechaHoraActual: datetime, usuario, ult_cambio: CambioEstado = None):
+    def confirmar(self, fechaHoraActual: datetime, usuario):
         """Confirmar el evento: delega al objeto Estado si implementa la operación."""
         # Delegar al estado actual del evento para procesar la confirmación.
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede confirmar")
-        return self._estadoActual.confirmar(self, fechaHoraActual, usuario, ult_cambio)
+        return self._estadoActual.confirmar(self, fechaHoraActual, usuario)
 
-    def derivar(self, estadoDerivado: Estado, fechaHoraActual: datetime, usuario, ult_cambio: CambioEstado = None):
+    def derivar(self, fechaHoraActual: datetime, usuario):
         """Derivar el evento a experto: delega al objeto Estado si implementa la operación."""
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede derivar")
-        return self._estadoActual.derivar(self, fechaHoraActual, usuario, ult_cambio)
+        return self._estadoActual.derivar(self, fechaHoraActual, usuario)
 
 
         
