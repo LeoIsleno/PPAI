@@ -8,7 +8,11 @@ class PendienteDeRevision(Estado):
         super().__init__("PendienteDeRevision", ambito)
 
     def getNombreEstado(self):
+<<<<<<< Updated upstream
         return "Pendiente de Revisión"
 
     def esPendienteDeRevision(self):
         return True
+=======
+        return "PendienteDeRevision"
+>>>>>>> Stashed changes

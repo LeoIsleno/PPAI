@@ -9,7 +9,10 @@ class SinRevision(Estado):
 
     def getNombreEstado(self):
         return "SinRevision"
+<<<<<<< Updated upstream
 
     def esSinRevision(self):
         return True
+=======
+>>>>>>> Stashed changes
 

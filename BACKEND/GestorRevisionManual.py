@@ -28,6 +28,7 @@ class GestorRevisionManual:
     def buscarEventosAutoDetectados(self, eventos):
         eventos_auto_detectado = []
         for evento in eventos:
+<<<<<<< Updated upstream
             # Llamada directa al getter del dominio; dejar que falle si el objeto
             # no implementa el método para que el error sea visible.
             estado = evento.getEstadoActual()
@@ -35,6 +36,18 @@ class GestorRevisionManual:
             # Comprobar tipo y condición de estado
             if isinstance(estado, Estado) and estado.esAutoDetectado():
                 eventos_auto_detectado.append(evento)
+=======
+            try:
+                estado = None
+                if hasattr(evento, 'getEstadoActual'):
+                    estado = evento.getEstadoActual()
+                # Cambio: comprobar tipo y llamar directamente al método
+                if isinstance(estado, Estado) and estado.esAutoDetectado():
+                    eventos_auto_detectado.append(evento)
+            except Exception:
+                # Ignorar objetos mal formados en la colección
+                continue
+>>>>>>> Stashed changes
         return eventos_auto_detectado
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
