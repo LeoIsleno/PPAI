@@ -10,6 +10,3 @@ class SinRevision(Estado):
     def getNombreEstado(self):
         return "SinRevision"
 
-    def esSinRevision(self):
-        return True
-

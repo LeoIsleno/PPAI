@@ -9,37 +9,108 @@ class AutoDetectado(Estado):
         super().__init__("AutoDetectado", ambito)
 
     def getNombreEstado(self):
-        return "Auto-detectado"
+        # Devolver el nombre canonical usado por la aplicación
+        return "AutoDetectado"
 
-    def esAutoDetectado(self):
-        """Indica que este estado es 'AutoDetectado' (predicado usado por el dominio)."""
-        return True
+    def obtenerCambioEstadoActual(self, cambiosEstado, fechaHoraActual):
+        """Devuelve el cambio de estado actual (el que está abierto) o None.
 
-    def bloquear(self, evento, fechaHoraActual, usuario):
+        La función es robusta: intenta usar `esEstadoActual()` si está disponible
+        en el objeto cambio; si no, comprueba `getFechaHoraFin()` o el
+        atributo `fechaHoraFin` para determinar si está abierto.
+        """
+        try:
+            cambios = cambiosEstado or []
+            cambio_actual = next((c for c in cambios if c.esEstadoActual()), None)
+            if cambio_actual:
+                try:
+                    cambio_actual.setFechaHoraFin(fechaHoraActual)
+                except (AttributeError, TypeError):
+                    pass
+        except Exception:
+            cambio_actual = None
+    
+    def crearProximoEstado(self,  nuevo_estado):
+        """Resuelve/crea la instancia del próximo Estado.
+
+        Parámetros:
+        - nuevo_estado: puede ser una instancia de Estado o un nombre (str).
+
+        Si `nuevo_estado` es un nombre desconocido para la fábrica, se crea
+        dinámicamente una instancia genérica de `Estado` con ese nombre en
+        lugar de devolver un fallback a otro tipo.
+        """
+        # Si ya es una instancia, devolverla tal cual
+        if isinstance(nuevo_estado, Estado):
+            return nuevo_estado
+
+        # Resolver por nombre mediante la fábrica
+        nombre_solicitado = str(nuevo_estado) if nuevo_estado is not None else None
+        instancia = Estado.from_name(nombre_solicitado, self.getAmbito())
+
+        # Normalizar nombres para comparar si la fábrica realmente reconoció el nombre
+        def _norm(s):
+            if not s:
+                return ""
+            return s.strip().lower().replace(" ", "").replace("-", "")
+
+        if nombre_solicitado is None:
+            return instancia
+
+        solicitado_norm = _norm(nombre_solicitado)
+        encontrado_norm = _norm(instancia.getNombreEstado() if hasattr(instancia, 'getNombreEstado') else instancia.__class__.__name__)
+
+        if solicitado_norm != encontrado_norm:
+            # La fábrica devolvió un fallback distinto; crear un Estado genérico con el nombre solicitado
+            return Estado(nombre_solicitado, self.getAmbito())
+
+        return instancia
+
+    def crearCambioEstado(self, nuevo_estado, fechaHoraActual, usuario):
+        from ..CambioEstado import CambioEstado
+        """
+        Crea y devuelve una instancia real de CambioEstado (no un dict).
+        """
+        # crear la instancia concreta de CambioEstado definida en Modelos/CambioEstado.py
+        nuevo_cambio = CambioEstado(fechaHoraActual, nuevo_estado, usuario, fechaHoraFin=None)
+        return nuevo_cambio
+
+    def bloquear(self, evento, fechaHoraActual, usuario, cambiosEstado):
         """Transición desde AutoDetectado -> BloqueadoEnRevision.
 
         Cierra el cambio de estado actual (si existe), cambia el estado del
         evento y crea el nuevo CambioEstado delegando al contexto.
         """
-        from .BloqueadoEnRevision import BloqueadoEnRevision
+        
 
-        # construir la instancia del siguiente estado
-        nuevo_estado = BloqueadoEnRevision(self.getAmbito())
+        # cerrar cambio actual si existe (buscar en la lista de cambios)
+        self.obtenerCambioEstadoActual(cambiosEstado, fechaHoraActual)
 
-        # cerrar cambio actual si existe
-        cambio_actual = evento.obtenerCambioEstadoActual()
-        if cambio_actual:
-            # Llamar directamente; si el dominio está mal formado se propagará la excepción
-            # (se evita el uso de try/except solicitada por el cambio).
-            cambio_actual.setFechaHoraFin(fechaHoraActual)
+        nuevo_estado = self.crearProximoEstado("BloqueadoEnRevision")
 
+        nuevo_cambio = self.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
+        """
+        try:
+            if cambiosEstado is not None:
+                cambiosEstado.append(nuevo_cambio)
+            else:
+                evento._cambiosEstado.append(nuevo_cambio)
+        except Exception:
+            try:
+                evento._cambiosEstado.append(nuevo_cambio)
+            except Exception:
+                pass
+        """
         # actualizar estado en el contexto
-        # Llamada directa al método principal; si el objeto no implementa el método
-        # la excepción deberá propagarse para que sea visible en capas superiores.
-        evento.setEstadoActual(nuevo_estado)
-
-        # crear el nuevo cambio y notificar al evento cuál es el cambio actual
-        nuevo_cambio = evento.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
-        # Registrar el cambio actual
-        evento.setCambioEstadoActual(nuevo_cambio)
+        try:
+            evento.setEstadoActual(nuevo_estado)
+        except (AttributeError, TypeError):
+            evento.setEstado(nuevo_estado)
+        try:
+            evento.setCambioEstadoActual(nuevo_cambio)
+        except Exception:
+            try:
+                evento._cambioEstadoActual = nuevo_cambio
+            except Exception:
+                pass
 

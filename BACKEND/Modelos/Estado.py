@@ -61,42 +61,21 @@ class Estado(ABC):
         return self.getAmbito() == "EventoSismico"
 
     def esAutoDetectado(self):
-        """Predicado por defecto: los estados concretos pueden sobrescribirlo.
-
-        Esto permite al código cliente (por ejemplo, GestorRevisionManual) invocar
-    `estado.esAutoDetectado()` respetando el patrón State y la polimorfía.
         """
-        return False
-
-    def esAutoConfirmado(self):
-        """Indica si el estado es 'AutoConfirmado'. Sobrescribir en subclases."""
-        return False
-
-    def esBloqueado(self):
-        """Indica si el estado representa un bloqueo para revisión."""
-        return False
-
-    def esRechazado(self):
-        return False
-
-    def esConfirmadoPorPersonal(self):
-        return False
-
-    def esDerivado(self):
-        return False
-
-    def esSinRevision(self):
-        return False
-
-    def esPendienteDeRevision(self):
-        return False
-
-    def esPendienteDeCierre(self):
-        return False
-
-    def esCerrado(self):
-        return False
-
+        Indica si este estado representa 'Auto-detectado'.
+        Lógica:
+        - Si el estado tiene un nombre explícito (`getNombreEstado()`), lo normaliza
+        y compara con la forma canonical 'autodetectado'.
+        - Si no hay nombre, hace fallback comprobando el nombre de la clase
+        (por ejemplo `AutoDetectado`).
+        """
+        nombre = self.getNombreEstado()
+        if nombre:
+            n = nombre.strip().lower().replace(" ", "").replace("-", "")
+            return n == "autodetectado"
+            # Fallback por nombre de la clase (por ejemplo AutoDetectado)
+        return self.__class__.__name__.lower() in ("autodetectado", "autodetect")
+    
     @classmethod
     def from_name(cls, nombre: str, ambito=None):
         """Fábrica: crea una instancia del estado concreto a partir de su nombre.

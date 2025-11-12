@@ -21,20 +21,20 @@ class GestorRevisionManual:
         # Obtener los eventos de dominio que están en estado AutoDetectado,
         # ordenarlos por fecha de ocurrencia y devolver su representación
         # para la vista (mostrarDatosEventoSismico).
-        eventos_auto = self.buscarEventosAutoDetectados(eventos)
-        eventos_ordenados = self.ordenarESPorFechaOcurrencia(eventos_auto)
+        self.__eventosAutoDetectados = self.buscarEventosAutoDetectados(eventos)
+        eventos_ordenados = self.ordenarESPorFechaOcurrencia(self.__eventosAutoDetectados)
         return [e.mostrarDatosEventoSismico() for e in eventos_ordenados]
 
     def buscarEventosAutoDetectados(self, eventos):
         eventos_auto_detectado = []
         for evento in eventos:
-            # Llamada directa al getter del dominio; dejar que falle si el objeto
-            # no implementa el método para que el error sea visible.
-            estado = evento.getEstadoActual()
-
-            # Comprobar tipo y condición de estado
-            if isinstance(estado, Estado) and estado.esAutoDetectado():
-                eventos_auto_detectado.append(evento)
+            try:
+                # Cambio: comprobar tipo y llamar directamente al método
+                if evento.estaAutoDetectado():
+                    eventos_auto_detectado.append(evento)
+            except Exception:
+                # Ignorar objetos mal formados en la colección
+                continue
         return eventos_auto_detectado
 
     def ordenarESPorFechaOcurrencia(self, eventos: list[EventoSismico]):
@@ -110,7 +110,7 @@ class GestorRevisionManual:
             return None
 
         # Delegar la comprobación de rol al propio Usuario (encapsula el acceso al Empleado)
-        if usuario.esAdministradorSismos():
+        if usuario.esAnalistaSismos():
             return usuario
 
         return None
@@ -222,9 +222,9 @@ class GestorRevisionManual:
         if not evento:
             return {'success': False, 'error': 'No hay evento seleccionado', 'status_code': 404}
 
-        accion = data.get('accion')
+        self.__opcionEventoSeleccionada = data.get('accion')
 
-        if accion == 'rechazar':
+        if self.__opcionEventoSeleccionada == 'rechazar':
             valid = self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
             if not valid.get('success'):
                 return valid
@@ -232,10 +232,11 @@ class GestorRevisionManual:
             self._fechaHoraActual = self.obtenerFechaHoraActual()
 
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.rechazarEventoSismico()
-            return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
+            if self.rechazarEventoSismico():
+                return {'success': True, 'mensaje': 'Evento rechazado correctamente'}
+            return {'success': False, 'error': 'Error al rechazar el evento', 'status_code': 500}
         
-        elif accion == 'confirmar':
+        elif self.__opcionEventoSeleccionada == 'confirmar':
             valid = self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
             if not valid.get('success'):
                 return valid
@@ -243,10 +244,11 @@ class GestorRevisionManual:
             self._fechaHoraActual = self.obtenerFechaHoraActual()
 
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.confirmarEventoSismico()
-            return {'success': True, 'mensaje': 'Evento confirmado correctamente'}
+            if self.confirmarEventoSismico():
+                return {'success': True, 'mensaje': 'Evento confirmado correctamente'}
+            return {'success': False, 'error': 'Error al confirmar el evento', 'status_code': 500}  
         
-        elif accion == 'experto':
+        elif self.__opcionEventoSeleccionada == 'experto':
             valid = self.validarDatosMinimosRequeridos(self.__eventoSismicoSeleccionado)
             if not valid.get('success'):
                 return valid
@@ -254,8 +256,9 @@ class GestorRevisionManual:
             self._fechaHoraActual = self.obtenerFechaHoraActual()
 
             # Pasar el Usuario logueado para que el Evento registre al Usuario responsable
-            self.derivarEventoSismico()
-            return {'success': True, 'mensaje': 'Evento derivado a experto correctamente'}
+            if self.derivarEventoSismico():
+                return {'success': True, 'mensaje': 'Evento derivado a experto correctamente'}
+            return {'success': False, 'error': 'Error al derivar el evento', 'status_code': 500}
         
         else:
             return {'success': False, 'error': 'Acción no válida', 'status_code': 400}

@@ -8,6 +8,3 @@ class Derivado(Estado):
 
     def getNombreEstado(self):
         return "Derivado"
-
-    def esDerivado(self):
-        return True

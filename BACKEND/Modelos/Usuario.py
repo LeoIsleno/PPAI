@@ -37,7 +37,7 @@ class Usuario:
         self.__empleado = empleado
 
 
-    def esAdministradorSismos(self):
+    def esAnalistaSismos(self):
         """
         Devuelve True si el usuario tiene un empleado asociado y dicho
         empleado tiene rol 'Administrador de Sismos'.
@@ -45,4 +45,4 @@ class Usuario:
         empleado = self.getEmpleado()
         if empleado is None:
             return False
-        return empleado.esAdministradorSismos()
+        return empleado.esAnalistaSismos()

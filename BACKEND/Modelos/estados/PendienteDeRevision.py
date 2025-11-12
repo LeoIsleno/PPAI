@@ -8,7 +8,4 @@ class PendienteDeRevision(Estado):
         super().__init__("PendienteDeRevision", ambito)
 
     def getNombreEstado(self):
-        return "Pendiente de Revisión"
-
-    def esPendienteDeRevision(self):
-        return True
+        return "PendienteDeRevision"

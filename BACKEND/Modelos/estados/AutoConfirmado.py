@@ -9,32 +9,3 @@ class AutoConfirmado(Estado):
 
     def getNombreEstado(self):
         return "AutoConfirmado"
-
-    def esAutoConfirmado(self):
-        """Indica que este estado es 'AutoConfirmado'."""
-        return True
-
-
-    def derivar(self, evento, fechaHoraActual, usuario):
-        """Transición AutoConfirmado -> Derivado usando la fábrica de estados.
-
-        Evita referencias directas a la clase `Derivado` (y por tanto errores de
-        import). Cierra el cambio actual, crea el nuevo estado mediante
-        Estado.from_name y registra el nuevo CambioEstado en el evento.
-        """
-        # Crear el nuevo estado a través de la fábrica para evitar imports directos
-        nuevo_estado = Estado.from_name("Derivado", self.getAmbito())
-
-        # cerrar cambio actual si existe
-        cambio_actual = evento.obtenerCambioEstadoActual()
-        if cambio_actual:
-            cambio_actual.setFechaHoraFin(fechaHoraActual)
-
-        # actualizar estado en el contexto
-        evento.setEstadoActual(nuevo_estado)
-
-        # crear el nuevo cambio y registrar como cambio actual
-        nuevo_cambio = evento.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
-        evento.setCambioEstadoActual(nuevo_cambio)
-
-        return nuevo_cambio

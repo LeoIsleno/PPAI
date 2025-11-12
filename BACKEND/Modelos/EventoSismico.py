@@ -127,15 +127,22 @@ class EventoSismico:
 
     def mostrarDatosEventoSismico(self):
         # Devuelve una representación compacta para listados: fecha, lat_epic, lon_epic, lat_hipo, lon_hipo, magnitud_obj
-        magn = None
-        if isinstance(self._magnitud, MagnitudRichter):
-            magn = { 'numero': self._magnitud.getNumero(), 'descripcion': self._magnitud.getDescripcionMagnitud() }
         return [self.getFechaHoraOcurrencia().strftime('%Y-%m-%d %H:%M:%S'),
                 self.getLatitudEpicentro(),
                 self.getLongitudEpicentro(),
                 self.getLatitudHipocentro(),
                 self.getLongitudHipocentro(),
-                magn]
+                self.getValorMagnitud()]
+
+    def getValorMagnitud(self):
+        """Devuelve un objeto simple con la información de la magnitud o None.
+
+        Usa el getter `getMagnitud()` en lugar de acceder al atributo interno.
+        """
+        magnitud = self.getMagnitud()
+        if isinstance(magnitud, MagnitudRichter):
+            return {'numero': magnitud.getNumero(), 'descripcion': magnitud.getDescripcionMagnitud()}
+        return None
 
     def obtenerDatosSismicos(self):
         """Obtiene los datos sísmicos completos del evento seleccionado recorriendo explícitamente las relaciones"""
@@ -182,17 +189,17 @@ class EventoSismico:
             datos = serie.getDatos(sismografos) 
             datos_series.append(datos)
         return datos_series
+    """
     def obtenerCambioEstadoActual(self):
-        """Obtiene el cambio de estado que se considera actual (sin fecha de fin)."""
+        
+        Obtiene el cambio de estado que se considera actual (sin fecha de fin).
+        
         return self._cambioEstadoActual
-
+ 
     def crearCambioEstado(self, estado: Estado, fechaHoraActual: datetime, usuario):
-        """Crea un CambioEstado registrando el `Usuario` que efectuó el cambio.
-
-        Se asegura de inicializar la lista de cambios y de manejar el caso en que
-        `self._cambiosEstado` contenga un único elemento None (por compatibilidad
-        con construcciones previas del dominio).
-        """
+       
+        Crea un CambioEstado registrando el `Usuario` que efectuó el cambio.
+        
         nuevo_cambio = CambioEstado(fechaHoraActual, estado, usuario)
         # Normalizar lista de cambios
         if self._cambiosEstado is None:
@@ -201,41 +208,37 @@ class EventoSismico:
             self._cambiosEstado = []
         self._cambiosEstado.append(nuevo_cambio)
         return nuevo_cambio
+     """
     def bloquear (self, fechaHoraActual: datetime, usuario):
         """Realiza el bloqueo del evento.
-
         Delegamos la lógica de transición al objeto `Estado` recibido.
         Esto respeta la estructura UML: la decisión/efecto de la transición
         queda encapsulada en la jerarquía de estados.
         """
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede bloquear")
-        # Llamada al método de la instancia Estado. Pasar sólo (evento, fecha, usuario)
-        # ya que las implementaciones concretas de Estado esperan esos 3 parámetros
-        # (el objeto Estado recibe `self` implícitamente).
-        self._estadoActual.bloquear(self, fechaHoraActual, usuario)
-        
+        self._estadoActual.bloquear(self, fechaHoraActual, usuario, self.getCambiosEstado())
+    
     def rechazar(self, fechaHoraActual: datetime, usuario):
         """
         Cambia el estado del evento a 'Rechazado', cierra el estado actual y registra el cambio.
         """
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede rechazar")
-        # Llamar al método del estado pasando (evento, fechaHoraActual, usuario)
-        self._estadoActual.rechazar(self, fechaHoraActual, usuario)
+        self._estadoActual.rechazar(self, fechaHoraActual, usuario, self.getCambiosEstado())
 
     def confirmar(self, fechaHoraActual: datetime, usuario):
         """Confirmar el evento: delega al objeto Estado si implementa la operación."""
         # Delegar al estado actual del evento para procesar la confirmación.
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede confirmar")
-        self._estadoActual.confirmar(self, fechaHoraActual, usuario)
+        self._estadoActual.confirmar(self, fechaHoraActual, usuario, self.getCambiosEstado())
 
     def derivar(self, fechaHoraActual: datetime, usuario):
         """Derivar el evento a experto: delega al objeto Estado si implementa la operación."""
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede derivar")
-        self._estadoActual.derivar(self, fechaHoraActual, usuario)
+        self._estadoActual.derivar(self, fechaHoraActual, usuario, self.getCambiosEstado())
 
 
         
