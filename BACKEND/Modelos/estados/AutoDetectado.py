@@ -5,10 +5,15 @@ class AutoDetectado(Estado):
     """Estado AutoDetectado: eventos sísmicos detectados automáticamente por el sistema."""
 
     def __init__(self, ambito=None):
-        super().__init__("Auto-detectado", ambito)
+        # Usar una forma canonical sin guión para homogeneizar con otras partes
+        super().__init__("AutoDetectado", ambito)
 
     def getNombreEstado(self):
         return "Auto-detectado"
+
+    def esAutoDetectado(self):
+        """Indica que este estado es 'AutoDetectado' (predicado usado por el dominio)."""
+        return True
 
     def bloquear(self, evento, fechaHoraActual, usuario):
         """Transición desde AutoDetectado -> BloqueadoEnRevision.
@@ -24,22 +29,17 @@ class AutoDetectado(Estado):
         # cerrar cambio actual si existe
         cambio_actual = evento.obtenerCambioEstadoActual()
         if cambio_actual:
-            try:
-                cambio_actual.setFechaHoraFin(fechaHoraActual)
-            except (AttributeError, TypeError):
-                pass
+            # Llamar directamente; si el dominio está mal formado se propagará la excepción
+            # (se evita el uso de try/except solicitada por el cambio).
+            cambio_actual.setFechaHoraFin(fechaHoraActual)
 
         # actualizar estado en el contexto
-        try:
-            evento.setEstadoActual(nuevo_estado)
-        except (AttributeError, TypeError):
-            evento.setEstado(nuevo_estado)
+        # Llamada directa al método principal; si el objeto no implementa el método
+        # la excepción deberá propagarse para que sea visible en capas superiores.
+        evento.setEstadoActual(nuevo_estado)
 
         # crear el nuevo cambio y notificar al evento cuál es el cambio actual
         nuevo_cambio = evento.crearCambioEstado(nuevo_estado, fechaHoraActual, usuario)
-        try:
-            evento.setCambioEstadoActual(nuevo_cambio)
-        except (AttributeError, TypeError):
-            pass
+        # Registrar el cambio actual
+        evento.setCambioEstadoActual(nuevo_cambio)
 
-        return nuevo_cambio

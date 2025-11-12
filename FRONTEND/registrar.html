@@ -36,7 +36,7 @@
     </div>
     <div class="row justify-content-center">
         <div class="col-md-10">
-            <div class="card card-seismic">
+            <div class="card card-seismic dropdown-overflow-visible">
                 <!-- Encabezado -->
                 <div class="card-header">
                     <h4 class="mb-0">
@@ -60,11 +60,22 @@
                                 <i class="bi bi-list-ul me-2"></i>
                                 Eventos Disponibles
                             </label>
-                            <select class="form-select" id="evento" required>
+                            <!-- Hidden native select kept for form compatibility; visible custom dropdown below forces opening downward -->
+                            <select class="form-select d-none" id="evento" required>
                                 <option value="" disabled selected>
                                     Cargando eventos sísmicos...
                                 </option>
                             </select>
+
+                            <!-- Custom Bootstrap dropdown that always opens downward -->
+                            <div class="dropdown">
+                                <button class="btn btn-white form-control text-start dropdown-toggle text-truncate" type="button" id="eventoDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    Seleccione un evento sísmico...
+                                </button>
+                                <ul class="dropdown-menu w-100" id="eventoDropdownMenu" aria-labelledby="eventoDropdownBtn" style="max-height: 480px; overflow:auto;">
+                                    <!-- items populated dynamically -->
+                                </ul>
+                            </div>
                             <div class="form-text">
                                 Seleccione un evento para revisar sus detalles
                             </div>
@@ -94,6 +105,22 @@
         <span>© 2025 Sistema de Monitoreo Sísmico - UTN FRC</span>
     </div>
 </footer>
+
+<!-- Modal para mostrar el mapa / foto -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mapModalLabel">Mapa / Foto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center p-3">
+                <img id="mapModalImg" src="" alt="Mapa" style="max-width:100%; height:auto; border-radius:8px;" />
+                <div id="mapModalCaption" class="small text-muted mt-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="static/auth.js"></script>

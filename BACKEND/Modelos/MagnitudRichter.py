@@ -21,7 +21,3 @@ class MagnitudRichter:
     def setNumero(self, numero):
         self.__numero = float(numero) if numero is not None else None
 
-    def __str__(self):
-        if self.__descripcion:
-            return f"{self.__descripcion} ({self.__numero})"
-        return str(self.__numero)

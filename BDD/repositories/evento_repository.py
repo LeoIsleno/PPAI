@@ -28,7 +28,7 @@ class EventoRepository:
         fecha = evento.getFechaHoraOcurrencia()
         magnitud_num = None
         
-        magnitud_obj = getattr(evento, 'getMagnitud', lambda: None)()
+        magnitud_obj = evento.getMagnitud()
         if magnitud_obj:
             magnitud_num = magnitud_obj.getNumero()
 
@@ -68,10 +68,16 @@ class EventoRepository:
 
         estado = evento.getEstadoActual()
         if estado:
-            existente.estado_actual = EstadoRepository.from_domain(db, estado)
+            estado_orm = EstadoRepository.from_domain(db, estado)
+            if estado_orm:
+                # store cached canonical values on the evento row
+                if hasattr(estado_orm, 'nombre_estado'):
+                    existente.estado_actual_nombre = estado_orm.nombre_estado
+                if hasattr(estado_orm, 'ambito'):
+                    existente.estado_actual_ambito = estado_orm.ambito
 
         # Cambios de estado
-        cambios = getattr(evento, 'getCambiosEstado', lambda: [])() or []
+        cambios = evento.getCambiosEstado() or []
         for cambio in cambios:
             cambio_orm = CambioEstadoRepository.from_domain(db, cambio)
             cambio_orm.evento = existente
@@ -79,7 +85,7 @@ class EventoRepository:
                 existente.cambios_estado.append(cambio_orm)
 
         # Series temporales
-        series = getattr(evento, 'getSerieTemporal', lambda: [])() or []
+        series = evento.getSerieTemporal() or []
         for serie in series:
             serie_orm = SerieRepository.from_domain(db, serie)
             serie_orm.evento = existente
@@ -137,12 +143,13 @@ class EventoRepository:
             )
 
         estado = None
-        if orm_evento.estado_actual:
+        # Resolve estado from cached columns (preferred)
+        if getattr(orm_evento, 'estado_actual_nombre', None):
             estado = Estado.from_name(
-                orm_evento.estado_actual.nombre_estado,
-                orm_evento.estado_actual.ambito
+                orm_evento.estado_actual_nombre,
+                orm_evento.estado_actual_ambito
             )
-
+        
         cambios = []
         for ce in orm_evento.cambios_estado or []:
             usuario = None
@@ -155,11 +162,9 @@ class EventoRepository:
                 )
             
             estado_ce = None
-            if ce.estado:
-                estado_ce = Estado.from_name(
-                    ce.estado.nombre_estado,
-                    ce.estado.ambito
-                )
+            # Prefer cached values on CambioEstado
+            if getattr(ce, 'estado_nombre', None):
+                estado_ce = Estado.from_name(ce.estado_nombre, ce.estado_ambito)
             
             cambios.append(CambioEstado(ce.fecha_hora_inicio, estado_ce, usuario))
 
@@ -180,8 +185,9 @@ class EventoRepository:
                 muestras.append(MuestraSismica(m.fecha_hora_muestra, detalles))
 
             estado_s = None
-            if s.estado:
-                estado_s = Estado.from_name(s.estado.nombre_estado, s.estado.ambito)
+            # Prefer cached nombre/ambito on SerieTemporal
+            if getattr(s, 'estado_nombre', None):
+                estado_s = Estado.from_name(s.estado_nombre, s.estado_ambito)
 
             serie = SerieTemporal(
                 s.fecha_hora_inicio_registro_muestras,

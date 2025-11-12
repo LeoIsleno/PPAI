@@ -5,8 +5,11 @@ class SinRevision(Estado):
     """Estado SinRevision: evento sin revisión, anulado."""
 
     def __init__(self, ambito=None):
-        super().__init__("Sin Revisión", ambito)
+        super().__init__("SinRevision", ambito)
 
     def getNombreEstado(self):
-        return "Sin Revisión"
+        return "SinRevision"
+
+    def esSinRevision(self):
+        return True
 

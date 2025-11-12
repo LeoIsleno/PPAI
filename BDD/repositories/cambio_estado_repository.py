@@ -16,7 +16,13 @@ class CambioEstadoRepository:
         
         estado = cambio.getEstado()
         if estado:
-            nuevo.estado = EstadoRepository.from_domain(db, estado)
+            estado_orm = EstadoRepository.from_domain(db, estado)
+            if estado_orm:
+                # Cache canonical values for easy reads
+                if hasattr(estado_orm, 'nombre_estado'):
+                    nuevo.estado_nombre = estado_orm.nombre_estado
+                if hasattr(estado_orm, 'ambito'):
+                    nuevo.estado_ambito = estado_orm.ambito
             
         usuario = cambio.getUsuario()
         if usuario:
