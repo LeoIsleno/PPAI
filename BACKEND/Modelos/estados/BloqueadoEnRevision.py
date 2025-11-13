@@ -86,6 +86,18 @@ class BloqueadoEnRevision(Estado):
 
         nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
 
+        # Agregar el nuevo cambio a la lista de cambios del evento
+        try:
+            if cambiosEstado is not None:
+                cambiosEstado.append(nuevoCambio)
+            else:
+                evento._cambiosEstado.append(nuevoCambio)
+        except Exception:
+            try:
+                evento._cambiosEstado.append(nuevoCambio)
+            except Exception:
+                pass
+
         # actualizar estado en el contexto
         try:
             evento.setEstadoActual(nuevoEstado)
@@ -112,6 +124,18 @@ class BloqueadoEnRevision(Estado):
 
         nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
 
+        # Agregar el nuevo cambio a la lista de cambios del evento
+        try:
+            if cambiosEstado is not None:
+                cambiosEstado.append(nuevoCambio)
+            else:
+                evento._cambiosEstado.append(nuevoCambio)
+        except Exception:
+            try:
+                evento._cambiosEstado.append(nuevoCambio)
+            except Exception:
+                pass
+
         # actualizar estado en el contexto
         try:
             evento.setEstadoActual(nuevoEstado)
@@ -137,6 +161,18 @@ class BloqueadoEnRevision(Estado):
         nuevoEstado = self.crearProximoEstado("Derivado")
 
         nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
+
+        # Agregar el nuevo cambio a la lista de cambios del evento
+        try:
+            if cambiosEstado is not None:
+                cambiosEstado.append(nuevoCambio)
+            else:
+                evento._cambiosEstado.append(nuevoCambio)
+        except Exception:
+            try:
+                evento._cambiosEstado.append(nuevoCambio)
+            except Exception:
+                pass
 
         # actualizar estado en el contexto
         try:

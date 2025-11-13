@@ -18,6 +18,8 @@ class CambioEstadoRepository:
         if estado:
             estado_orm = EstadoRepository.from_domain(db, estado)
             if estado_orm:
+                # Establecer la relación FK
+                nuevo.estado = estado_orm
                 # Cache canonical values for easy reads
                 if hasattr(estado_orm, 'nombre_estado'):
                     nuevo.estado_nombre = estado_orm.nombre_estado
