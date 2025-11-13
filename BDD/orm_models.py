@@ -41,24 +41,6 @@ class Usuario(Base):
         return self.empleado.rol.nombre == 'Administrador de Sismos'
 
 
-# NOTE: The original schema used a single `estado` table to store all
-# concrete states and relied on SQLAlchemy polymorphic/joined-table
-# inheritance. The requirement changed: we must *remove* the base
-# `estado` table and keep only a table per concrete state. To support
-# this we model each concrete state as a standalone table (no base
-# table). The application layer will use cached `nombre_estado` and
-# `ambito` fields on referencing tables for reads and repositories will
-# resolve concrete rows when needed.
-
-class EstadoBase:
-    """Lightweight helper base (not mapped) used only for type hints.
-
-    Concrete state tables below each declare `id`, `nombre_estado` and
-    `ambito` columns so repository code can read those fields uniformly.
-    """
-    pass
-
-
 class OrigenDeGeneracion(Base):
     __tablename__ = 'origen_de_generacion'
     id = Column(Integer, primary_key=True)
@@ -105,14 +87,10 @@ class EventoSismico(Base):
     longitud_epicentro = Column(Float)
     latitud_hipocentro = Column(Float)
     longitud_hipocentro = Column(Float)
-    # ahora la magnitud se persiste como una relación a MagnitudRichter
     magnitud_id = Column(Integer, ForeignKey('magnitud_richter.id'))
-
     origen_id = Column(Integer, ForeignKey('origen_de_generacion.id'))
     alcance_id = Column(Integer, ForeignKey('alcance_sismo.id'))
     clasificacion_id = Column(Integer, ForeignKey('clasificacion_sismo.id'))
-    # Store canonical nombre and ambito to simplify reads without extra
-    # joins to concrete tables.
     estado_actual_nombre = Column(String(200))
     estado_actual_ambito = Column(String(200))
 
@@ -130,13 +108,11 @@ class CambioEstado(Base):
     id = Column(Integer, primary_key=True)
     fecha_hora_inicio = Column(DateTime)
     fecha_hora_fin = Column(DateTime)
-    # Cached canonical name/ambito for easier queries
-    estado_nombre = Column(String(200))
-    estado_ambito = Column(String(200))
     usuario_id = Column(Integer, ForeignKey('usuario.id'))
     evento_id = Column(Integer, ForeignKey('evento_sismico.id'))
-    # `estado` relationship removed: repositories will resolve the concrete
-    # estado row based on cached `nombre_estado` and `ambito` when needed.
+    estado_nombre = Column(String(200))
+    estado_ambito = Column(String(200))
+    
     usuario = relationship('Usuario')
     evento = relationship('EventoSismico', back_populates='cambios_estado')
 
@@ -182,13 +158,10 @@ class SerieTemporal(Base):
     fecha_hora_registro = Column(DateTime)
     frecuencia_muestreo = Column(Float)
     condicion_alarma = Column(Boolean)
-    # Cached canonical name/ambito for easier reads
-    estado_nombre = Column(String(200))
-    estado_ambito = Column(String(200))
     evento_id = Column(Integer, ForeignKey('evento_sismico.id'))
     sismografo_id = Column(Integer, ForeignKey('sismografo.id'))
-    # `estado` relationship removed; use cached `estado_nombre`/`estado_ambito` and
-    # repositories to resolve concrete estado rows when necessary.
+    estado_nombre = Column(String(200))
+    estado_ambito = Column(String(200))
     muestras = relationship('MuestraSismica', back_populates='serie', cascade='all, delete-orphan')
     evento = relationship('EventoSismico', back_populates='serie_temporal')
     sismografo = relationship('Sismografo', back_populates='series_temporales')
@@ -230,75 +203,71 @@ class Sesion(Base):
     usuario = relationship('Usuario')
 
 
-# --- Concrete Estado tables (one real DB table per concrete state) ---
-# Each concrete state is a standalone mapped class with its own table.
-
-
 class EstadoAutoDetectado(Base):
     __tablename__ = 'estado_auto_detectado'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoAutoConfirmado(Base):
     __tablename__ = 'estado_auto_confirmado'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoPendienteDeCierre(Base):
     __tablename__ = 'estado_pendiente_de_cierre'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoDerivado(Base):
     __tablename__ = 'estado_derivado'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoConfirmadoPorPersonal(Base):
     __tablename__ = 'estado_confirmado_por_personal'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoCerrado(Base):
     __tablename__ = 'estado_cerrado'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoRechazado(Base):
     __tablename__ = 'estado_rechazado'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoBloqueadoEnRevision(Base):
     __tablename__ = 'estado_bloqueado_en_revision'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoPendienteDeRevision(Base):
     __tablename__ = 'estado_pendiente_de_revision'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))
 
 
 class EstadoSinRevision(Base):
     __tablename__ = 'estado_sin_revision'
     id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), unique=True, nullable=False)
+    nombre_estado = Column(String(200), nullable=False)
     ambito = Column(String(200))

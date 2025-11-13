@@ -102,6 +102,23 @@ class EventoSismico:
 
     def setCambioEstadoActual(self, cambio: CambioEstado):
         """Establece cuál es el cambio de estado actual del evento (no persiste)."""
+        # Guardar la referencia al cambio actual y asegurarse de que
+        # la lista de cambios del evento lo contiene para que la
+        # capa de persistencia lo detecte y lo guarde.
+        if cambio is None:
+            self._cambioEstadoActual = None
+            return
+
+        if self._cambiosEstado is None:
+            self._cambiosEstado = []
+        # Normalizar caso en que la lista contiene un único None
+        if len(self._cambiosEstado) == 1 and self._cambiosEstado[0] is None:
+            self._cambiosEstado = []
+
+        # Añadir sólo si no está ya presente (comparación por identidad)
+        if cambio not in self._cambiosEstado:
+            self._cambiosEstado.append(cambio)
+
         self._cambioEstadoActual = cambio
 
     def getCambiosEstado(self):
@@ -189,26 +206,7 @@ class EventoSismico:
             datos = serie.getDatos(sismografos) 
             datos_series.append(datos)
         return datos_series
-    """
-    def obtenerCambioEstadoActual(self):
-        
-        Obtiene el cambio de estado que se considera actual (sin fecha de fin).
-        
-        return self._cambioEstadoActual
- 
-    def crearCambioEstado(self, estado: Estado, fechaHoraActual: datetime, usuario):
-       
-        Crea un CambioEstado registrando el `Usuario` que efectuó el cambio.
-        
-        nuevo_cambio = CambioEstado(fechaHoraActual, estado, usuario)
-        # Normalizar lista de cambios
-        if self._cambiosEstado is None:
-            self._cambiosEstado = []
-        if len(self._cambiosEstado) == 1 and self._cambiosEstado[0] is None:
-            self._cambiosEstado = []
-        self._cambiosEstado.append(nuevo_cambio)
-        return nuevo_cambio
-     """
+
     def bloquear (self, fechaHoraActual: datetime, usuario):
         """Realiza el bloqueo del evento.
         Delegamos la lógica de transición al objeto `Estado` recibido.

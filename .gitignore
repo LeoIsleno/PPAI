@@ -6,9 +6,6 @@ __pycache__/
 # Virtual environments
 .venv/
 
-# SQLite database file
-BDD/sismografos.db
-
 # Editor/IDE files
 .vscode/
 *.swp

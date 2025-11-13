@@ -45,16 +45,7 @@ class EstadoRepository:
             if existente:
                 existente.ambito = estado.getAmbito()
                 return existente
-
-        # If not found, create a new canonical Estado row and persist it.
-        # We handle possible race conditions (concurrent inserts) by catching
-        # IntegrityError and re-querying the existing row.
         ambito_val = estado.getAmbito()
-
-        # Map canonical display names to concrete ORM subclasses so that
-        # a dedicated table for each concrete state is created (joined
-        # table inheritance). If no concrete subclass is found, fall back
-        # to the base Estado table (safe for unknown/custom states).
         mapping = {
             'Auto-detectado': orm_models.EstadoAutoDetectado,
             'AutoDetectado': orm_models.EstadoAutoDetectado,
@@ -79,9 +70,6 @@ class EstadoRepository:
         if orm_cls:
             nuevo = orm_cls(nombre_estado=nombre_canonical, ambito=ambito_val)
         else:
-            # Unknown/custom estado: create a row in the "generic" table
-            # We don't have a generic table any more; create an instance on the
-            # EstadoAutoDetectado table as a last resort to persist the name.
             nuevo = orm_models.EstadoAutoDetectado(nombre_estado=nombre_canonical, ambito=ambito_val)
         db.add(nuevo)
         # flush so the row is written and an id is assigned within caller's transaction
@@ -90,9 +78,6 @@ class EstadoRepository:
 
     @staticmethod
     def get_by_id(db: Session, id: int):
-        # Search across concrete estado tables for the given id and return
-        # the first match. This is a pragmatic fallback since ids are not
-        # globally unique across separate tables.
         concrete_tables = [
             orm_models.EstadoAutoDetectado,
             orm_models.EstadoAutoConfirmado,
@@ -113,8 +98,6 @@ class EstadoRepository:
 
     @staticmethod
     def list_all(db: Session):
-        # Return concatenation of all concrete estado rows so callers can
-        # iterate over objects that expose `nombre_estado` and `ambito`.
         concrete_tables = [
             orm_models.EstadoAutoDetectado,
             orm_models.EstadoAutoConfirmado,
@@ -135,3 +118,4 @@ class EstadoRepository:
     @staticmethod
     def delete(db: Session, estado):
         db.delete(estado)
+

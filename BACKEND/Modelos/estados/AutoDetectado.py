@@ -89,18 +89,7 @@ class AutoDetectado(Estado):
         nuevoEstado = self.crearProximoEstado("BloqueadoEnRevision")
 
         nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
-        """
-        try:
-            if cambiosEstado is not None:
-                cambiosEstado.append(nuevo_cambio)
-            else:
-                evento._cambiosEstado.append(nuevo_cambio)
-        except Exception:
-            try:
-                evento._cambiosEstado.append(nuevo_cambio)
-            except Exception:
-                pass
-        """
+        
         # actualizar estado en el contexto
         try:
             evento.setEstadoActual(nuevoEstado)
