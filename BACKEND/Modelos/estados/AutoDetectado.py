@@ -12,6 +12,10 @@ class AutoDetectado(Estado):
         # Devolver el nombre canonical usado por la aplicación
         return "AutoDetectado"
 
+    def esAutoDetectado(self):
+        """Indica que esta clase concreta representa el estado AutoDetectado."""
+        return True
+
     def obtenerCambioEstadoActual(self, cambiosEstado, fechaHoraActual):
         """Devuelve el cambio de estado actual (el que está abierto) o None.
 

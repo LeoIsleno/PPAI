@@ -61,20 +61,12 @@ class Estado(ABC):
         return self.getAmbito() == "EventoSismico"
 
     def esAutoDetectado(self):
+        """Por defecto, un estado no es 'AutoDetectado'.
+
+        Las clases concretas que representen ese estado deben sobrescribir
+        este método y devolver True cuando corresponda.
         """
-        Indica si este estado representa 'Auto-detectado'.
-        Lógica:
-        - Si el estado tiene un nombre explícito (`getNombreEstado()`), lo normaliza
-        y compara con la forma canonical 'autodetectado'.
-        - Si no hay nombre, hace fallback comprobando el nombre de la clase
-        (por ejemplo `AutoDetectado`).
-        """
-        nombre = self.getNombreEstado()
-        if nombre:
-            n = nombre.strip().lower().replace(" ", "").replace("-", "")
-            return n == "autodetectado"
-            # Fallback por nombre de la clase (por ejemplo AutoDetectado)
-        return self.__class__.__name__.lower() in ("autodetectado", "autodetect")
+        return False
     
     @classmethod
     def from_name(cls, nombre: str, ambito=None):
