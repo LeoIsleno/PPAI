@@ -41,33 +41,22 @@ class Usuario(Base):
         return self.empleado.rol.nombre == 'Administrador de Sismos'
 
 
-# Estado base table with Joined Table Inheritance (works perfectly in SQLite)
-# SQLAlchemy creates separate tables and handles JOINs automatically
-# Each concrete estado has its own table that references the base 'estado' table
+# NOTE: The original schema used a single `estado` table to store all
+# concrete states and relied on SQLAlchemy polymorphic/joined-table
+# inheritance. The requirement changed: we must *remove* the base
+# `estado` table and keep only a table per concrete state. To support
+# this we model each concrete state as a standalone table (no base
+# table). The application layer will use cached `nombre_estado` and
+# `ambito` fields on referencing tables for reads and repositories will
+# resolve concrete rows when needed.
 
-class Estado(Base):
-    """Base Estado table with Joined Table Inheritance.
-    
-    Each concrete estado (AutoDetectado, Cerrado, etc.) has its own table
-    that joins with this base table via a ForeignKey on their id.
-    SQLite supports this perfectly - SQLAlchemy handles all the JOINs.
+class EstadoBase:
+    """Lightweight helper base (not mapped) used only for type hints.
+
+    Concrete state tables below each declare `id`, `nombre_estado` and
+    `ambito` columns so repository code can read those fields uniformly.
     """
-    __tablename__ = 'estado'
-    
-    id = Column(Integer, primary_key=True)
-    nombre_estado = Column(String(200), nullable=False)
-    ambito = Column(String(200))
-    tipo = Column(String(50), nullable=False)  # Discriminator column
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'estado',
-        'polymorphic_on': tipo
-    }
-    
-    # Relationships
-    eventos = relationship('EventoSismico', foreign_keys='EventoSismico.estado_actual_id', back_populates='estado_actual')
-    cambios_estado = relationship('CambioEstado', back_populates='estado')
-    series_temporales = relationship('SerieTemporal', back_populates='estado')
+    pass
 
 
 class OrigenDeGeneracion(Base):
@@ -122,9 +111,8 @@ class EventoSismico(Base):
     origen_id = Column(Integer, ForeignKey('origen_de_generacion.id'))
     alcance_id = Column(Integer, ForeignKey('alcance_sismo.id'))
     clasificacion_id = Column(Integer, ForeignKey('clasificacion_sismo.id'))
-    estado_actual_id = Column(Integer, ForeignKey('estado.id'))
-    
-    # Columnas de caché para consultas rápidas (opcional)
+    # Store canonical nombre and ambito to simplify reads without extra
+    # joins to concrete tables.
     estado_actual_nombre = Column(String(200))
     estado_actual_ambito = Column(String(200))
 
@@ -132,7 +120,6 @@ class EventoSismico(Base):
     alcance = relationship('AlcanceSismo', back_populates='eventos')
     clasificacion = relationship('ClasificacionSismo', back_populates='eventos')
     magnitud = relationship('MagnitudRichter', back_populates='eventos')
-    estado_actual = relationship('Estado', foreign_keys=[estado_actual_id], back_populates='eventos')
 
     serie_temporal = relationship('SerieTemporal', back_populates='evento', cascade='all, delete-orphan')
     cambios_estado = relationship('CambioEstado', back_populates='evento', cascade='all, delete-orphan')
@@ -143,15 +130,13 @@ class CambioEstado(Base):
     id = Column(Integer, primary_key=True)
     fecha_hora_inicio = Column(DateTime)
     fecha_hora_fin = Column(DateTime)
-    estado_id = Column(Integer, ForeignKey('estado.id'))
-    usuario_id = Column(Integer, ForeignKey('usuario.id'))
-    evento_id = Column(Integer, ForeignKey('evento_sismico.id'))
-    
-    # Columnas de caché para consultas rápidas (opcional)
+    # Cached canonical name/ambito for easier queries
     estado_nombre = Column(String(200))
     estado_ambito = Column(String(200))
-    
-    estado = relationship('Estado', back_populates='cambios_estado')
+    usuario_id = Column(Integer, ForeignKey('usuario.id'))
+    evento_id = Column(Integer, ForeignKey('evento_sismico.id'))
+    # `estado` relationship removed: repositories will resolve the concrete
+    # estado row based on cached `nombre_estado` and `ambito` when needed.
     usuario = relationship('Usuario')
     evento = relationship('EventoSismico', back_populates='cambios_estado')
 
@@ -197,15 +182,13 @@ class SerieTemporal(Base):
     fecha_hora_registro = Column(DateTime)
     frecuencia_muestreo = Column(Float)
     condicion_alarma = Column(Boolean)
-    estado_id = Column(Integer, ForeignKey('estado.id'))
-    evento_id = Column(Integer, ForeignKey('evento_sismico.id'))
-    sismografo_id = Column(Integer, ForeignKey('sismografo.id'))
-    
-    # Columnas de caché para consultas rápidas (opcional)
+    # Cached canonical name/ambito for easier reads
     estado_nombre = Column(String(200))
     estado_ambito = Column(String(200))
-    
-    estado = relationship('Estado', back_populates='series_temporales')
+    evento_id = Column(Integer, ForeignKey('evento_sismico.id'))
+    sismografo_id = Column(Integer, ForeignKey('sismografo.id'))
+    # `estado` relationship removed; use cached `estado_nombre`/`estado_ambito` and
+    # repositories to resolve concrete estado rows when necessary.
     muestras = relationship('MuestraSismica', back_populates='serie', cascade='all, delete-orphan')
     evento = relationship('EventoSismico', back_populates='serie_temporal')
     sismografo = relationship('Sismografo', back_populates='series_temporales')
@@ -247,105 +230,75 @@ class Sesion(Base):
     usuario = relationship('Usuario')
 
 
-
 # --- Concrete Estado tables (one real DB table per concrete state) ---
 # Each concrete state is a standalone mapped class with its own table.
 
-class EstadoAutoDetectado(Estado):
-    """Estado Auto-detectado con tabla propia (joined table inheritance)."""
+
+class EstadoAutoDetectado(Base):
     __tablename__ = 'estado_auto_detectado'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'auto_detectado',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoAutoConfirmado(Estado):
-    """Estado Auto-confirmado con tabla propia (joined table inheritance)."""
+class EstadoAutoConfirmado(Base):
     __tablename__ = 'estado_auto_confirmado'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'auto_confirmado',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoPendienteDeCierre(Estado):
-    """Estado Pendiente de Cierre con tabla propia (joined table inheritance)."""
+class EstadoPendienteDeCierre(Base):
     __tablename__ = 'estado_pendiente_de_cierre'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'pendiente_de_cierre',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoDerivado(Estado):
-    """Estado Derivado con tabla propia (joined table inheritance)."""
+class EstadoDerivado(Base):
     __tablename__ = 'estado_derivado'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'derivado',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoConfirmadoPorPersonal(Estado):
-    """Estado Confirmado por Personal con tabla propia (joined table inheritance)."""
+class EstadoConfirmadoPorPersonal(Base):
     __tablename__ = 'estado_confirmado_por_personal'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'confirmado_por_personal',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoCerrado(Estado):
-    """Estado Cerrado con tabla propia (joined table inheritance)."""
+class EstadoCerrado(Base):
     __tablename__ = 'estado_cerrado'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'cerrado',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoRechazado(Estado):
-    """Estado Rechazado con tabla propia (joined table inheritance)."""
+class EstadoRechazado(Base):
     __tablename__ = 'estado_rechazado'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'rechazado',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoBloqueadoEnRevision(Estado):
-    """Estado Bloqueado en Revisión con tabla propia (joined table inheritance)."""
+class EstadoBloqueadoEnRevision(Base):
     __tablename__ = 'estado_bloqueado_en_revision'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'bloqueado_en_revision',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoPendienteDeRevision(Estado):
-    """Estado Pendiente de Revisión con tabla propia (joined table inheritance)."""
+class EstadoPendienteDeRevision(Base):
     __tablename__ = 'estado_pendiente_de_revision'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'pendiente_de_revision',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))
 
 
-class EstadoSinRevision(Estado):
-    """Estado Sin Revisión con tabla propia (joined table inheritance)."""
+class EstadoSinRevision(Base):
     __tablename__ = 'estado_sin_revision'
-    id = Column(Integer, ForeignKey('estado.id'), primary_key=True)
-    
-    __mapper_args__ = {
-        'polymorphic_identity': 'sin_revision',
-    }
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), unique=True, nullable=False)
+    ambito = Column(String(200))

@@ -70,9 +70,7 @@ class EventoRepository:
         if estado:
             estado_orm = EstadoRepository.from_domain(db, estado)
             if estado_orm:
-                # Establecer la relación FK
-                existente.estado_actual = estado_orm
-                # Store cached canonical values on the evento row
+                # store cached canonical values on the evento row
                 if hasattr(estado_orm, 'nombre_estado'):
                     existente.estado_actual_nombre = estado_orm.nombre_estado
                 if hasattr(estado_orm, 'ambito'):

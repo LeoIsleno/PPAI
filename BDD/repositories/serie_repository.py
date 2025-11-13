@@ -6,8 +6,6 @@ from BDD import orm_models
 class SerieRepository:
     @staticmethod
     def from_domain(db: Session, serie):
-        from .estado_repository import EstadoRepository
-        
         fecha_inicio = serie.getFechaHoraInicioRegistroMuestras()
         frecuencia = serie.getFrecuenciaMuestreo()
         
@@ -19,17 +17,6 @@ class SerieRepository:
         if existente:
             existente.fecha_hora_registro = serie.getFechaHoraRegistro()
             existente.condicion_alarma = serie.getCondicionAlarma()
-            
-            # Actualizar estado si existe
-            estado = serie.getEstado()
-            if estado:
-                estado_orm = EstadoRepository.from_domain(db, estado)
-                if estado_orm:
-                    existente.estado = estado_orm
-                    if hasattr(estado_orm, 'nombre_estado'):
-                        existente.estado_nombre = estado_orm.nombre_estado
-                    if hasattr(estado_orm, 'ambito'):
-                        existente.estado_ambito = estado_orm.ambito
             return existente
 
         nueva = orm_models.SerieTemporal(
@@ -38,18 +25,6 @@ class SerieRepository:
             frecuencia_muestreo=frecuencia,
             condicion_alarma=serie.getCondicionAlarma()
         )
-        
-        # Agregar estado si existe
-        estado = serie.getEstado()
-        if estado:
-            estado_orm = EstadoRepository.from_domain(db, estado)
-            if estado_orm:
-                nueva.estado = estado_orm
-                if hasattr(estado_orm, 'nombre_estado'):
-                    nueva.estado_nombre = estado_orm.nombre_estado
-                if hasattr(estado_orm, 'ambito'):
-                    nueva.estado_ambito = estado_orm.ambito
-        
         db.add(nueva)
         return nueva
 

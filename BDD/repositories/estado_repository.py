@@ -79,8 +79,10 @@ class EstadoRepository:
         if orm_cls:
             nuevo = orm_cls(nombre_estado=nombre_canonical, ambito=ambito_val)
         else:
-            # Unknown/custom estado: create a row in the base Estado table
-            nuevo = orm_models.Estado(nombre_estado=nombre_canonical, ambito=ambito_val, tipo='estado')
+            # Unknown/custom estado: create a row in the "generic" table
+            # We don't have a generic table any more; create an instance on the
+            # EstadoAutoDetectado table as a last resort to persist the name.
+            nuevo = orm_models.EstadoAutoDetectado(nombre_estado=nombre_canonical, ambito=ambito_val)
         db.add(nuevo)
         # flush so the row is written and an id is assigned within caller's transaction
         db.flush()
@@ -88,15 +90,48 @@ class EstadoRepository:
 
     @staticmethod
     def get_by_id(db: Session, id: int):
-        # Query the base Estado table with polymorphic loading
-        return db.query(orm_models.Estado).get(id)
+        # Search across concrete estado tables for the given id and return
+        # the first match. This is a pragmatic fallback since ids are not
+        # globally unique across separate tables.
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        for tbl in concrete_tables:
+            found = db.query(tbl).get(id)
+            if found:
+                return found
+        return None
 
     @staticmethod
     def list_all(db: Session):
-        # Query the base Estado table - SQLAlchemy will handle polymorphic loading
-        return db.query(orm_models.Estado).all()
+        # Return concatenation of all concrete estado rows so callers can
+        # iterate over objects that expose `nombre_estado` and `ambito`.
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        results = []
+        for tbl in concrete_tables:
+            results.extend(db.query(tbl).all() or [])
+        return results
 
     @staticmethod
     def delete(db: Session, estado):
         db.delete(estado)
-

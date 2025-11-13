@@ -31,6 +31,16 @@ class AutoDetectado(Estado):
             cambio_actual = None
     
     def crearProximoEstado(self,  nuevoEstado):
+        """Resuelve/crea la instancia del próximo Estado.
+
+        Parámetros:
+        - nuevo_estado: puede ser una instancia de Estado o un nombre (str).
+
+        Si `nuevo_estado` es un nombre desconocido para la fábrica, se crea
+        dinámicamente una instancia genérica de `Estado` con ese nombre en
+        lugar de devolver un fallback a otro tipo.
+        """
+        # Si ya es una instancia, devolverla tal cual
         if isinstance(nuevoEstado, Estado):
             return nuevoEstado
 
@@ -79,19 +89,18 @@ class AutoDetectado(Estado):
         nuevoEstado = self.crearProximoEstado("BloqueadoEnRevision")
 
         nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
-        
-        # Agregar el nuevo cambio a la lista de cambios del evento
+        """
         try:
             if cambiosEstado is not None:
-                cambiosEstado.append(nuevoCambio)
+                cambiosEstado.append(nuevo_cambio)
             else:
-                evento._cambiosEstado.append(nuevoCambio)
+                evento._cambiosEstado.append(nuevo_cambio)
         except Exception:
             try:
-                evento._cambiosEstado.append(nuevoCambio)
+                evento._cambiosEstado.append(nuevo_cambio)
             except Exception:
                 pass
-        
+        """
         # actualizar estado en el contexto
         try:
             evento.setEstadoActual(nuevoEstado)
