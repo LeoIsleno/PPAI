@@ -22,21 +22,11 @@ class ListarEventosSismicos:
     """
 
     @staticmethod
-    def crear_eventos_sismicos(sismografos_persistentes: Optional[List[Any]] = None,
-                               usuario_global: Optional[Any] = None) -> List[EventoSismico]:
+    def crear_eventos_sismicos() -> List[EventoSismico]:
         """Obtener y mapear todos los eventos sísmicos persistidos.
-
-        Args:
-            sismografos_persistentes: (opcional) lista de sismógrafos en memoria
-                que podría usarse durante el mapeo (no utilizada actualmente).
-            usuario_global: (opcional) objeto usuario global/contexto.
 
         Returns:
             Lista de instancias de `EventoSismico` del dominio.
-
-        Nota:
-            Si hay eventos que no pueden transformarse, se omiten y se
-            registra un DEBUG para facilitar la depuración.
         """
         eventos_dom: List[EventoSismico] = []
         with SessionLocal() as db:

@@ -37,7 +37,7 @@ provider = ListaSismografos(usuario)
 # Acceso directo al atributo `sismografos`; si no existe, se propagará la excepción.
 sismografos_persistentes = provider.sismografos or []
 
-eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos(sismografos_persistentes, usuario)
+eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos()
 
 lista_alcances = ListarEventosSismicos.obtener_alcances()
 
