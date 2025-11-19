@@ -8,9 +8,10 @@ from BACKEND.Modelos.MuestraSismica import MuestraSismica
 from BACKEND.Modelos.DetalleMuestraSismica import DetalleMuestraSismica
 from BACKEND.Modelos.TipoDeDato import TipoDeDato
 from BACKEND.Modelos.Estado import Estado
+from .IBase_repository import IBaseRepository
 
 
-class SismografoRepository:
+class SismografoRepository(IBaseRepository):
     @staticmethod
     def list_all(db: Session):
         return db.query(orm_models.Sismografo).all()
@@ -78,3 +79,33 @@ class SismografoRepository:
             estado=None,
             cambiosEstado=[]
         )
+    
+    @staticmethod
+    def from_domain(db: Session, sismografo):
+        """Convierte y persiste un objeto de dominio Sismografo a ORM."""
+        nro_serie = sismografo.getNroSerie()
+        existente = db.query(orm_models.Sismografo).filter_by(nro_serie=nro_serie).first()
+        
+        if existente:
+            # Actualiza campos existentes
+            existente.identificador_sismografo = sismografo.getIdentificadorSismografo()
+            existente.fecha_adquisicion = sismografo.getFechaAdquisicion()
+        else:
+            # Crea nuevo si no existe
+            existente = orm_models.Sismografo(
+                identificador_sismografo=sismografo.getIdentificadorSismografo(),
+                nro_serie=nro_serie,
+                fecha_adquisicion=sismografo.getFechaAdquisicion()
+            )
+            db.add(existente)
+        
+        # NOTA: Las SeriesTemporales relacionadas se manejan en SerieRepository.
+
+        return existente
+    
+    @staticmethod
+    def delete(db: Session, sismografo: orm_models.Sismografo):
+        """Elimina un registro ORM de Sismografo."""
+        db.delete(sismografo)
+    
+

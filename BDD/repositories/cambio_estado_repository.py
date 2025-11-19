@@ -1,9 +1,14 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 from BDD import orm_models
+from BACKEND.Modelos.CambioEstado import CambioEstado
+from BACKEND.Modelos.Estado import Estado
+from BACKEND.Modelos.Usuario import Usuario
+from .IBase_repository import IBaseRepository
 
 
-class CambioEstadoRepository:
+class CambioEstadoRepository(IBaseRepository):
+
     @staticmethod
     def from_domain(db: Session, cambio):
         from .estado_repository import EstadoRepository
@@ -51,8 +56,8 @@ class CambioEstadoRepository:
         if estado:
             estado_orm = EstadoRepository.from_domain(db, estado)
             if estado_orm:
-                if hasattr(estado_orm, 'nombre_estado'):
-                    nuevo.estado_nombre = estado_orm.nombre_estado
+                if hasattr(estado_orm, 'nombre'):
+                    nuevo.estado_nombre = estado_orm.nombre
                 if hasattr(estado_orm, 'ambito'):
                     nuevo.estado_ambito = estado_orm.ambito
 
@@ -77,3 +82,32 @@ class CambioEstadoRepository:
     @staticmethod
     def delete(db: Session, cambio: orm_models.CambioEstado):
         db.delete(cambio)
+
+    @staticmethod
+    def to_domain(orm_cambio):
+        """Mapea un objeto ORM CambioEstado a un objeto de dominio CambioEstado."""
+        if not orm_cambio:
+            return None
+
+        # 1. Mapear el Usuario (solo datos básicos si no se carga la relación completa)
+        usuario = None
+        if orm_cambio.usuario:
+            usuario = Usuario(
+                orm_cambio.usuario.nombre,
+                orm_cambio.usuario.contrasena,
+                orm_cambio.usuario.fecha_alta,
+                None # Empleado no se carga aquí para evitar recursión
+            )
+
+        # 2. Mapear el Estado (usa el cache de texto en ORM)
+        estado_ce = None
+        if getattr(orm_cambio, 'estado_nombre', None):
+            estado_ce = Estado.from_name(orm_cambio.estado_nombre, orm_cambio.estado_ambito)
+        
+        # 3. Crear el objeto de dominio CambioEstado
+        return CambioEstado(
+            orm_cambio.fecha_hora_inicio,
+            estado_ce,
+            usuario,
+            orm_cambio.fecha_hora_fin
+        )

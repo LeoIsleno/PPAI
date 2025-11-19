@@ -1,5 +1,5 @@
 from typing import Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from BDD import orm_models
 from .origen_repository import OrigenRepository
 from .alcance_repository import AlcanceRepository
@@ -20,40 +20,54 @@ from BACKEND.Modelos.TipoDeDato import TipoDeDato
 from BACKEND.Modelos.CambioEstado import CambioEstado
 from BACKEND.Modelos.Usuario import Usuario
 from BACKEND.Modelos.MagnitudRichter import MagnitudRichter
+from .IBase_repository import IBaseRepository
 
 
-class EventoRepository:
+class EventoRepository(IBaseRepository):
     @staticmethod
     def from_domain(db: Session, evento):
-        fecha = evento.getFechaHoraOcurrencia()
-        magnitud_num = None
-        
-        magnitud_obj = evento.getMagnitud()
-        if magnitud_obj:
-            magnitud_num = magnitud_obj.getNumero()
 
-        # Buscar evento existente
-        query = db.query(orm_models.EventoSismico)
-        if magnitud_num:
-            existente = query.join(orm_models.MagnitudRichter).filter(
-                orm_models.EventoSismico.fecha_hora_ocurrencia == fecha,
-                orm_models.MagnitudRichter.numero == magnitud_num
-            ).first()
-        else:
-            existente = query.filter_by(fecha_hora_ocurrencia=fecha).first()
+        # 1. INTENTAR BUSCAR POR ID PRIMERO (Esta es la corrección clave)
+        existente = None
+        if evento.getId(): # Si el objeto de dominio ya tiene un ID cargado
+            existente = db.query(orm_models.EventoSismico).get(evento.getId())
 
+        # 2. Fallback: Buscar por fecha (solo si es un evento nuevo sin ID)
         if not existente:
-            existente = orm_models.EventoSismico(
-                fecha_hora_ocurrencia=fecha,
-                fecha_hora_fin=evento.getFechaHoraFin(),
-                latitud_epicentro=evento.getLatitudEpicentro(),
-                longitud_epicentro=evento.getLongitudEpicentro(),
-                latitud_hipocentro=evento.getLatitudHipocentro(),
-                longitud_hipocentro=evento.getLongitudHipocentro()
-            )
+            fecha = evento.getFechaHoraOcurrencia()
+            existente = db.query(orm_models.EventoSismico).filter_by(fecha_hora_ocurrencia=fecha).first()
+        
+        # 3. Crear nuevo si no existe
+        if not existente:
+            existente = orm_models.EventoSismico()
             db.add(existente)
 
-        # Relaciones simples
+        # 4. ACTUALIZAR TODOS LOS CAMPOS (Importante para "Modificar Datos")
+        # Siempre actualizamos los campos escalares por si cambiaron en el Gestor
+        existente.fecha_hora_ocurrencia = evento.getFechaHoraOcurrencia()
+        existente.fecha_hora_fin = evento.getFechaHoraFin()
+        existente.latitud_epicentro = evento.getLatitudEpicentro()
+        existente.longitud_epicentro = evento.getLongitudEpicentro()
+        existente.latitud_hipocentro = evento.getLatitudHipocentro()
+        existente.longitud_hipocentro = evento.getLongitudHipocentro()
+
+        # 5. Actualizar Estado (Usando columnas de texto como definimos)
+        estado = evento.getEstadoActual()
+        if estado:
+            # Usamos el repo de estado para asegurar persistencia/mapeo, pero guardamos texto
+            estado_orm = EstadoRepository.from_domain(db, estado)
+            if estado_orm:
+                existente.estado_actual_nombre = estado_orm.nombre
+                existente.estado_actual_ambito = estado_orm.ambito
+
+        # 6. Actualizar Magnitud (Lógica corregida)
+        magnitud_obj = evento.getMagnitud()
+        if magnitud_obj:
+            # Usar el repositorio de magnitud para buscar o crear
+            mag_orm = MagnitudRepository.from_domain(db, magnitud_obj)
+            existente.magnitud = mag_orm 
+
+        # 7. Actualizar otras relaciones (Origen, Alcance, Clasificación)
         origen = evento.getOrigenGeneracion()
         if origen:
             existente.origen = OrigenRepository.from_domain(db, origen)
@@ -66,41 +80,18 @@ class EventoRepository:
         if clasificacion:
             existente.clasificacion = ClasificacionRepository.from_domain(db, clasificacion)
 
-        estado = evento.getEstadoActual()
-        if estado:
-            estado_orm = EstadoRepository.from_domain(db, estado)
-            if estado_orm:
-                if hasattr(estado_orm, 'nombre_estado'):
-                    existente.estado_actual_nombre = estado_orm.nombre_estado
-                if hasattr(estado_orm, 'ambito'):
-                    existente.estado_actual_ambito = estado_orm.ambito
-
-        # Cambios de estado
+        # 8. Actualizar Cambios de Estado (Append solo los nuevos)
         cambios = evento.getCambiosEstado() or []
         for cambio in cambios:
+            # Si el cambio ya tiene ID o ya está en la lista, se gestiona en from_domain
             cambio_orm = CambioEstadoRepository.from_domain(db, cambio)
-            cambio_orm.evento = existente
             if cambio_orm not in existente.cambios_estado:
                 existente.cambios_estado.append(cambio_orm)
+                # Importante: Vincular el cambio al evento actual
+                cambio_orm.evento = existente 
 
-        # Series temporales
-        series = evento.getSerieTemporal() or []
-        for serie in series:
-            serie_orm = SerieRepository.from_domain(db, serie)
-            serie_orm.evento = existente
-            if serie_orm not in existente.serie_temporal:
-                existente.serie_temporal.append(serie_orm)
-
-        # Magnitud
-        if magnitud_obj:
-            magnitud_orm = MagnitudRepository.from_domain(db, magnitud_obj)
-            if magnitud_orm:
-                magnitud_orm.eventos.append(existente)
-        elif magnitud_num:
-            magnitud_temp = MagnitudRichter(None, magnitud_num)
-            magnitud_orm = MagnitudRepository.from_domain(db, magnitud_temp)
-            if magnitud_orm:
-                existente.magnitud = magnitud_orm
+        # Nota: Las Series Temporales suelen ser pesadas, verifica si necesitas actualizarlas
+        # en cada guardado del evento o si se manejan aparte.
 
         return existente
 
@@ -110,7 +101,14 @@ class EventoRepository:
 
     @staticmethod
     def list_all(db: Session):
-        return db.query(orm_models.EventoSismico).all()
+        return db.query(orm_models.EventoSismico).options(
+            # Cargar Series Temporales (relación 1)
+            joinedload(orm_models.EventoSismico.serie_temporal) 
+                # Cargar el Sismografo dentro de cada Serie (relación 2)
+                .joinedload(orm_models.SerieTemporal.sismografo) 
+                # Cargar la Estacion dentro del Sismografo (relación 3)
+                .joinedload(orm_models.Sismografo.estacion)
+        ).all()
 
     @staticmethod
     def delete(db: Session, evento: orm_models.EventoSismico):
@@ -221,7 +219,7 @@ class EventoRepository:
             serieTemporal=series
         )
         
-        evento.id_evento = orm_evento.id
+        evento.setId(orm_evento.id)
         if orm_evento.fecha_hora_fin:
             evento.setFechaHoraFin(orm_evento.fecha_hora_fin)
             

@@ -1,9 +1,11 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 from BDD import orm_models
+from BACKEND.Modelos.ClasificacionSismo import ClasificacionSismo
+from .IBase_repository import IBaseRepository
 
 
-class ClasificacionRepository:
+class ClasificacionRepository(IBaseRepository):
     @staticmethod
     def from_domain(db: Session, clasificacion):
         nombre = clasificacion.getNombre()
@@ -33,3 +35,19 @@ class ClasificacionRepository:
     @staticmethod
     def delete(db: Session, clasificacion: orm_models.ClasificacionSismo):
         db.delete(clasificacion)
+
+    @staticmethod
+    def to_domain(orm_clasificacion):
+        """
+        Mapea un objeto ORM ClasificacionSismo a un objeto de dominio ClasificacionSismo.
+        Este método es requerido por la interfaz BaseRepository.
+        """
+        if not orm_clasificacion:
+            return None
+        
+        # El mapeo convierte el objeto ORM a la entidad de dominio.
+        return ClasificacionSismo(
+            orm_clasificacion.nombre, 
+            orm_clasificacion.km_profundidad_desde,
+            orm_clasificacion.km_profundidad_hasta
+        )

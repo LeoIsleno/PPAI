@@ -52,17 +52,18 @@ class Sismografo:
     def sosDeSerieTemporal(self, serieTemporal):
         for serie in self.__seriesTemporales:
             # Comparar por fecha de registro
-            if serie.getFechaHoraRegistro() == serieTemporal.getFechaHoraRegistro():
-                return {
-                    'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
-                    'nombreEstacion': self.__estacionSismologica.getNombre()
-                }
+            if self.__estacionSismologica:
+                if serie.getFechaHoraRegistro() == serieTemporal.getFechaHoraRegistro():
+                    return {
+                        'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
+                        'nombreEstacion': self.__estacionSismologica.getNombre()
+                    }
 
-            if serie.getFrecuenciaMuestreo() == serieTemporal.getFrecuenciaMuestreo():
-                return {
-                    'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
-                    'nombreEstacion': self.__estacionSismologica.getNombre()
-                }
+                if serie.getFrecuenciaMuestreo() == serieTemporal.getFrecuenciaMuestreo():
+                    return {
+                        'codigoEstacion': self.__estacionSismologica.getCodigoEstacion(),
+                        'nombreEstacion': self.__estacionSismologica.getNombre()
+                    }
         return None
 
     def getEstado(self):
