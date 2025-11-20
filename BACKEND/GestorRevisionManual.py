@@ -6,6 +6,7 @@ from BACKEND.Modelos.Sesion import Sesion
 from BACKEND.Modelos.MagnitudRichter import MagnitudRichter
 from BDD.database import SessionLocal
 from BDD.repositories.evento_repository import EventoRepository
+from BACKEND.Modelos.Usuario import Usuario
 
 class GestorRevisionManual:
     def __init__(self):
@@ -33,6 +34,7 @@ class GestorRevisionManual:
                 if evento.estaAutoDetectado():
                     eventos_auto_detectado.append(evento)
             except Exception:
+                # Ignorar objetos mal formados en la colección
                 continue
         return eventos_auto_detectado
 
@@ -92,16 +94,14 @@ class GestorRevisionManual:
 
         return {'success': True}
         
-    def buscarASLogueado(self, sesion:Sesion):
+    def buscarASLogueado(self):
         """
         Obtiene el usuario desde la sesión y verifica que el empleado asociado
         tenga rol de 'Administrador de Sismos'. Devuelve el objeto Usuario si
         está autorizado, o None si no lo está.
         """
-        if sesion is None:
-            return None
 
-        usuario = sesion.obtenerUsuario()
+        usuario = self._usuarioLogueado
         if usuario is None:
             return None
 
@@ -167,7 +167,7 @@ class GestorRevisionManual:
         series_temporales = evento.obtenerSeriesTemporales(sismografos)
         return series_temporales
 
-    def tomarSeleccionDeEventoSismico(self, eventos_persistentes, sismografos, data, usuario_logueado, estados):
+    def tomarSeleccionDeEventoSismico(self, sismografos, data, usuario_logueado, estados):
 
         magnitud = data.get('magnitud')
         # The frontend may send a magnitud as a number or as an object like { numero: X, descripcion: Y }
@@ -180,22 +180,31 @@ class GestorRevisionManual:
         lat_hipocentro = data.get('latHipocentro')
         long_hipocentro = data.get('longHipocentro')
 
+        print(  f"Buscando evento con magnitud={magnitud_val}, "
+                f"lat_epicentro={lat_epicentro}, long_epicentro={long_epicentro}, "
+                f"lat_hipocentro={lat_hipocentro}, long_hipocentro={long_hipocentro}")
+        
+        for e in self.__eventosAutoDetectados:
+            print(f" - Evento ID={e.getId()}, Magnitud={e.getMagnitud().getNumero() if e.getMagnitud() else 'N/A'}, "
+                  f"LatEpicentro={e.getLatitudEpicentro()}, LongEpicentro={e.getLongitudEpicentro()}, "
+                  f"LatHipocentro={e.getLatitudHipocentro()}, LongHipocentro={e.getLongitudHipocentro()}")
+
         evento_seleccionado = next(
-        (evento for evento in eventos_persistentes
-         if (evento.getMagnitud() is not None and magnitud_val is not None and float(evento.getMagnitud().getNumero()) == float(magnitud_val))
-         and float(evento.getLatitudEpicentro()) == float(lat_epicentro)
-         and float(evento.getLongitudEpicentro()) == float(long_epicentro)
-         and float(evento.getLatitudHipocentro()) == float(lat_hipocentro)
-         and float(evento.getLongitudHipocentro()) == float(long_hipocentro)
-        ),
-        None
-    )
+            (evento for evento in self.__eventosAutoDetectados
+            if (evento.getMagnitud() is not None and magnitud_val is not None and float(evento.getMagnitud().getNumero()) == float(magnitud_val))
+                and float(evento.getLatitudEpicentro()) == float(lat_epicentro)
+                and float(evento.getLongitudEpicentro()) == float(long_epicentro)
+                and float(evento.getLatitudHipocentro()) == float(lat_hipocentro)
+                and float(evento.getLongitudHipocentro()) == float(long_hipocentro)
+            ),
+            None
+        )
 
         self.__eventoSismicoSeleccionado = evento_seleccionado
 
         if evento_seleccionado:
             # El estado no se busca, se crea en la transición
-            usuario = self.buscarASLogueado(usuario_logueado)
+            usuario = self.buscarASLogueado()
             # Verificar que el usuario esté autorizado (empleado con rol administrador)
             if usuario is None:
                 return {'success': False, 'error': 'Usuario no autorizado para bloquear eventos', 'status_code': 403}
@@ -263,7 +272,7 @@ class GestorRevisionManual:
     def tomarSeleccionDeOpcionMapa(self):
         return '¹aqui mapa¹'
     
-    def tomarOpcionModificacionDatos(self, request, lista_alcances, eventos_persistentes, lista_origenes):
+    def tomarOpcionModificacionDatos(self, request, lista_alcances, lista_origenes):
         evento = self.__eventoSismicoSeleccionado
         if not evento:
             return {'success': False, 'error': 'No hay evento seleccionado', 'status_code': 404}
@@ -305,9 +314,9 @@ class GestorRevisionManual:
                 if data['origenGeneracion']:
                     evento.setOrigenGeneracion(OrigenDeGeneracion(data['origenGeneracion'], None))
         # --- Actualiza el evento en la lista persistente si es necesario ---
-        for idx, ev in enumerate(eventos_persistentes):
+        for idx, ev in enumerate(self.__eventosAutoDetectados):
             if ev is evento:
-                eventos_persistentes[idx] = evento
+                self.__eventosAutoDetectados[idx] = evento
                 break
         
         with SessionLocal() as db:
@@ -315,6 +324,38 @@ class GestorRevisionManual:
                 EventoRepository.from_domain(db, evento)
 
         return {'success': True}
+    
+    def setSesionUsuarioLogueado(self, sesion: Sesion):
+        self._usuarioLogueado = sesion.obtenerUsuario()
+
+    def cancelarRevisionEventoSismico(self):
+        """
+        Coordina la cancelación de la revisión, revirtiendo el evento 
+        al estado AutoDetectado y persistiendo el cambio.
+        """
+        evento:EventoSismico = self.__eventoSismicoSeleccionado
+        if not evento:
+            return False
+
+        # 1. Actualizar fecha y usuario
+        self._fechaHoraActual = self.obtenerFechaHoraActual()
+        usuario = self._usuarioLogueado
+        
+        # 2. Delegar la lógica de transición al dominio
+        try:
+            evento.volver(self._fechaHoraActual, usuario)
+        except NotImplementedError:
+            # Si el estado actual (ej: Rechazado) no permite cancelar
+            return False 
+        
+        # 3. Persistir cambios (siempre dentro de la sesión/transacción)
+        with SessionLocal() as db:
+            with db.begin():
+                EventoRepository.from_domain(db, evento)
+        
+        # 4. Limpiar selección interna para el próximo uso
+        self.__eventoSismicoSeleccionado = None 
+        return True 
 
 
 

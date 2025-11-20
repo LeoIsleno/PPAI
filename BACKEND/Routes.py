@@ -29,6 +29,8 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 gestor = GestorRevisionManual()
 
+gestor.setSesionUsuarioLogueado(usuario_logueado)
+
 # Inicializar datos
 database.init_db()
 
@@ -37,7 +39,8 @@ provider = ListaSismografos(usuario)
 # Acceso directo al atributo `sismografos`; si no existe, se propagará la excepción.
 sismografos_persistentes = provider.sismografos or []
 
-eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos(sismografos_persistentes, usuario)
+with database.SessionLocal() as db:
+    eventos_persistentes = ListarEventosSismicos.crear_eventos_sismicos(db, sismografos_persistentes, usuario)
 
 lista_alcances = ListarEventosSismicos.obtener_alcances()
 
@@ -49,7 +52,6 @@ estados = ListarEventosSismicos.obtener_estados()
 def seleccionar_evento():
     data = request.get_json()
     resultado = gestor.tomarSeleccionDeEventoSismico(
-        eventos_persistentes,
         sismografos_persistentes,
         data,
         usuario_logueado,
@@ -75,7 +77,15 @@ def seleccionar_evento():
 
 @app.route('/api/eventos', methods=['GET'])
 def api_eventos():
-    resultado = gestor.opRegistrarResultadoRevisionManual(eventos_persistentes)
+    with database.SessionLocal() as db:
+        eventos_frescos_dominio = ListarEventosSismicos.crear_eventos_sismicos(
+            db, 
+            sismografos_persistentes, 
+            usuario
+        )
+
+        resultado = gestor.opRegistrarResultadoRevisionManual(eventos_frescos_dominio)
+
     return jsonify(resultado)
 
 @app.route('/modificar_datos_evento', methods=['POST'])
@@ -83,7 +93,6 @@ def modificar_datos_evento():
     resultado = gestor.tomarOpcionModificacionDatos(
         request,
         lista_alcances,
-        eventos_persistentes,
         lista_origenes
     )
     
@@ -122,5 +131,20 @@ def serve_html(filename):
         return send_from_directory('../FRONTEND', filename)
     return '', 404
 
+@app.route('/cancelar_revision', methods=['POST'])
+def cancelar_revision():
+    """
+    Endpoint llamado por el botón Volver para liberar el evento 
+    y revertirlo a AutoDetectado.
+    """
+    exito = gestor.cancelarRevisionEventoSismico()
+    
+    if exito:
+        return jsonify({'success': True, 'mensaje': 'Revisión cancelada. Evento liberado.'})
+    else:
+        # Esto incluye fallos si no hay evento seleccionado o si el estado no admite la acción
+        return jsonify({'success': False, 'error': 'No se pudo cancelar la revisión'}), 400
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5001, debug=True)
+

@@ -5,9 +5,10 @@ from .empleado_repository import EmpleadoRepository
 from BACKEND.Modelos.Rol import Rol
 from BACKEND.Modelos.Empleado import Empleado
 from BACKEND.Modelos.Usuario import Usuario
+from .IBase_repository import IBaseRepository
 
 
-class UsuarioRepository:
+class UsuarioRepository(IBaseRepository):
     @staticmethod
     def from_domain(db: Session, usuario):
         nombre = usuario.getNombre()
