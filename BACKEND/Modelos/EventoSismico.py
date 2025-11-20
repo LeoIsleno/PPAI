@@ -27,7 +27,6 @@ class EventoSismico:
         self._estadoActual = estadoActual
         self._cambiosEstado = cambiosEstado if isinstance(cambiosEstado, list) else [cambiosEstado]
         self._cambioEstadoActual = None
-        self._id = None  # Para asignar el ID persistente cuando se guarde en BD
         
         for ce in self._cambiosEstado:
             if ce.getFechaHoraFin() is None:
@@ -90,12 +89,6 @@ class EventoSismico:
 
     def setClasificacion(self, value):
         self._clasificacion = value
-
-    def getId(self):
-        return self._id
-
-    def setId(self, value):
-        self._id = value
 
     def getEstadoActual(self):
         return self._estadoActual
@@ -244,12 +237,6 @@ class EventoSismico:
         if self._estadoActual is None:
             raise RuntimeError("Evento sin estado actual: no se puede derivar")
         self._estadoActual.derivar(self, fechaHoraActual, usuario, self.getCambiosEstado())
-
-    def volver(self, fechaHoraActual: datetime, usuario):
-        """Volver el evento a revisión: delega al objeto Estado si implementa la operación."""
-        if self._estadoActual is None:
-            raise RuntimeError("Evento sin estado actual: no se puede volver a revisión")
-        self._estadoActual.volver(self, fechaHoraActual, usuario, self.getCambiosEstado())
 
 
         

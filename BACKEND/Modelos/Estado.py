@@ -17,7 +17,7 @@ class Estado(ABC):
     def getNombreEstado(self):
         return self._nombre
 
-    def bloquear(self, evento, fechaHoraActual, usuario, cambiosEstado):
+    def bloquear(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
 
     # Caché opcional de instancias de estados para evitar crear múltiples
@@ -56,9 +56,6 @@ class Estado(ABC):
 
     def anular(self, evento, fechaHoraActual, usuario):
         raise NotImplementedError()
-    
-    def volver(self, evento, fechaHoraActual, usuario):
-        return None
 
     def esAmbitoEventoSismico(self):
         return self.getAmbito() == "EventoSismico"
@@ -123,5 +120,5 @@ class Estado(ABC):
 
 def _es_ambito_evento_sismico(ambito):
     """Método auxiliar para identificar el ámbito de evento sismico"""
-    return ambito == 'EventoSismico'
+    return ambito == "EventoSismico"
 

@@ -193,8 +193,81 @@ class EstacionSismologica(Base):
     sismografos = relationship('Sismografo', back_populates='estacion')
 
 
-class Estado(Base):
-    __tablename__ = 'estado'
-    id = Column('id', Integer, primary_key=True)
-    nombre = Column('nombre', String(50), nullable=False)
-    ambito = Column('ambito', String(50), nullable=False)
+class Sesion(Base):
+    __tablename__ = 'sesion'
+    id = Column(Integer, primary_key=True)
+    fecha_hora_desde = Column(DateTime)
+    fecha_hora_hasta = Column(DateTime)
+    usuario_id = Column(Integer, ForeignKey('usuario.id'))
+
+    usuario = relationship('Usuario')
+
+
+class EstadoAutoDetectado(Base):
+    __tablename__ = 'estado_auto_detectado'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoAutoConfirmado(Base):
+    __tablename__ = 'estado_auto_confirmado'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoPendienteDeCierre(Base):
+    __tablename__ = 'estado_pendiente_de_cierre'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoDerivado(Base):
+    __tablename__ = 'estado_derivado'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoConfirmadoPorPersonal(Base):
+    __tablename__ = 'estado_confirmado_por_personal'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoCerrado(Base):
+    __tablename__ = 'estado_cerrado'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoRechazado(Base):
+    __tablename__ = 'estado_rechazado'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoBloqueadoEnRevision(Base):
+    __tablename__ = 'estado_bloqueado_en_revision'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoPendienteDeRevision(Base):
+    __tablename__ = 'estado_pendiente_de_revision'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))
+
+
+class EstadoSinRevision(Base):
+    __tablename__ = 'estado_sin_revision'
+    id = Column(Integer, primary_key=True)
+    nombre_estado = Column(String(200), nullable=False)
+    ambito = Column(String(200))

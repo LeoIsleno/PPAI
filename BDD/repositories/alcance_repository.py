@@ -1,11 +1,9 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 from BDD import orm_models
-from .IBase_repository import IBaseRepository
-from BACKEND.Modelos.AlcanceSismo import AlcanceSismo
 
 
-class AlcanceRepository(IBaseRepository):
+class AlcanceRepository:
     @staticmethod
     def from_domain(db: Session, alcance):
         nombre = alcance.getNombre()
@@ -33,18 +31,3 @@ class AlcanceRepository(IBaseRepository):
     @staticmethod
     def delete(db: Session, alcance: orm_models.AlcanceSismo):
         db.delete(alcance)
-
-    @staticmethod
-    def to_domain(orm_alcance):
-        """
-        Mapea un objeto ORM AlcanceSismo a un objeto de dominio AlcanceSismo.
-        Este método es requerido por la interfaz BaseRepository.
-        """
-        if not orm_alcance:
-            return None
-        
-        # El mapeo convierte el objeto ORM a la entidad de dominio.
-        return AlcanceSismo(
-            orm_alcance.nombre, 
-            orm_alcance.descripcion
-        )

@@ -2,74 +2,120 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from BDD import orm_models
-from BACKEND.Modelos.Estado import Estado
-from .IBase_repository import IBaseRepository
 
 
-class EstadoRepository(IBaseRepository):
+class EstadoRepository:
     """Repository for Estado.
 
     Policy: this repository will attempt to resolve an Estado to an existing
-    canonical row by `nombre`. If no canonical row exists, it will create
+    canonical row by `nombre_estado`. If no canonical row exists, it will create
     and persist a new canonical `Estado` row using the normalized name returned
     by the domain factory. This reduces manual DB maintenance while still
     normalizing variants (e.g. "Auto-detectado" vs "AutoDetectado").
     """
     @staticmethod
     def from_domain(db: Session, estado):
+        # Normalize the state name using the Estado factory so we store a canonical
+        # representation in the DB. This avoids creating duplicate Estado rows when
+        # different spellings/variants are used (e.g. "Auto-detectado" vs "AutoDetectado"
+        # or "Bloqueado en Revisión" vs "BloqueadoEnRevision").
         from BACKEND.Modelos.Estado import Estado as EstadoDom
-        
-        # 1. Obtener el nombre canónico del dominio (misma lógica que antes)
         raw_nombre = estado.getNombreEstado()
+        # Use the Estado.from_name factory to obtain a canonical instance
         canonical = EstadoDom.from_name(raw_nombre, estado.getAmbito())
         nombre_canonical = canonical.getNombreEstado()
-        ambito_val = estado.getAmbito() # e.g. 'EventoSismico'
 
-        # 2. Intentar encontrar el registro existente en la ÚNICA tabla
-        existente = db.query(orm_models.Estado).filter_by(
-            nombre=nombre_canonical.upper(),
-            ambito=ambito_val
-        ).first()
-        
-        if existente:
-            return existente
-        
-        # 3. Si no existe, crear un nuevo registro en la tabla unificada
-        try:
-            nuevo = orm_models.Estado(nombre=nombre_canonical, ambito=ambito_val)
-            db.add(nuevo)
-            db.flush() # Para asignar el ID dentro de la transacción
-            return nuevo
-        except IntegrityError:
-            # Esto maneja la rara condición de carrera donde otro proceso lo crea antes
-            db.rollback()
-            return db.query(orm_models.Estado).filter_by(nombre=nombre_canonical, ambito=ambito_val).first()
+        # Try to find an existing Estado row among concrete estado tables
+        # by canonical name. We query each concrete table until we find one.
+        existente = None
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        for tbl in concrete_tables:
+            existente = db.query(tbl).filter_by(nombre_estado=nombre_canonical).first()
+            if existente:
+                existente.ambito = estado.getAmbito()
+                return existente
+        ambito_val = estado.getAmbito()
+        mapping = {
+            'Auto-detectado': orm_models.EstadoAutoDetectado,
+            'AutoDetectado': orm_models.EstadoAutoDetectado,
+            'Auto-confirmado': orm_models.EstadoAutoConfirmado,
+            'AutoConfirmado': orm_models.EstadoAutoConfirmado,
+            'Pendiente de Cierre': orm_models.EstadoPendienteDeCierre,
+            'PendienteDeCierre': orm_models.EstadoPendienteDeCierre,
+            'Derivado': orm_models.EstadoDerivado,
+            'Confirmado por Personal': orm_models.EstadoConfirmadoPorPersonal,
+            'ConfirmadoPorPersonal': orm_models.EstadoConfirmadoPorPersonal,
+            'Cerrado': orm_models.EstadoCerrado,
+            'Rechazado': orm_models.EstadoRechazado,
+            'Bloqueado en Revisión': orm_models.EstadoBloqueadoEnRevision,
+            'BloqueadoEnRevision': orm_models.EstadoBloqueadoEnRevision,
+            'Pendiente de Revisión': orm_models.EstadoPendienteDeRevision,
+            'PendienteDeRevision': orm_models.EstadoPendienteDeRevision,
+            'SinRevision': orm_models.EstadoSinRevision,
+            'Sin Revisión': orm_models.EstadoSinRevision,
+        }
+
+        orm_cls = mapping.get(nombre_canonical)
+        if orm_cls:
+            nuevo = orm_cls(nombre_estado=nombre_canonical, ambito=ambito_val)
+        else:
+            nuevo = orm_models.EstadoAutoDetectado(nombre_estado=nombre_canonical, ambito=ambito_val)
+        db.add(nuevo)
+        # flush so the row is written and an id is assigned within caller's transaction
+        db.flush()
+        return nuevo
 
     @staticmethod
     def get_by_id(db: Session, id: int):
-        """Busca un estado por ID en la tabla única 'estado'."""
-        # Consulta: SELECT * FROM estado WHERE id = :id;
-        return db.query(orm_models.Estado).get(id)
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        for tbl in concrete_tables:
+            found = db.query(tbl).get(id)
+            if found:
+                return found
+        return None
 
     @staticmethod
     def list_all(db: Session):
-        """Obtiene todos los estados posibles desde la tabla única 'estado'."""
-        # Consulta: SELECT * FROM estado;
-        return db.query(orm_models.Estado).all()
+        concrete_tables = [
+            orm_models.EstadoAutoDetectado,
+            orm_models.EstadoAutoConfirmado,
+            orm_models.EstadoPendienteDeCierre,
+            orm_models.EstadoDerivado,
+            orm_models.EstadoConfirmadoPorPersonal,
+            orm_models.EstadoCerrado,
+            orm_models.EstadoRechazado,
+            orm_models.EstadoBloqueadoEnRevision,
+            orm_models.EstadoPendienteDeRevision,
+            orm_models.EstadoSinRevision,
+        ]
+        results = []
+        for tbl in concrete_tables:
+            results.extend(db.query(tbl).all() or [])
+        return results
 
     @staticmethod
     def delete(db: Session, estado):
         db.delete(estado)
 
-    @staticmethod
-    def to_domain(orm_estado: orm_models.Estado) -> Optional[Estado]:
-        """
-        CONTRATO CUMPLIDO: Mapea un objeto ORM de la tabla única 'estado' a 
-        un objeto de dominio concreto (ej. EstadoAutoDetectado) usando el factory.
-        """
-        if not orm_estado:
-            return None
-            
-        # El objeto ORM tiene 'nombre' y 'ambito'
-        # El factory de dominio se encarga de instanciar la clase concreta correcta.
-        return Estado.from_name(orm_estado.nombre, orm_estado.ambito)

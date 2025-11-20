@@ -2,12 +2,9 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from BDD import orm_models
 from .rol_repository import RolRepository
-from BACKEND.Modelos.Rol import Rol
-from BACKEND.Modelos.Empleado import Empleado
-from .IBase_repository import IBaseRepository
 
 
-class EmpleadoRepository(IBaseRepository):
+class EmpleadoRepository:
     @staticmethod
     def from_domain(db: Session, empleado):
         mail = empleado.getMail()
@@ -43,24 +40,3 @@ class EmpleadoRepository(IBaseRepository):
     @staticmethod
     def delete(db: Session, empleado: orm_models.Empleado):
         db.delete(empleado)
-
-    @staticmethod
-    def to_domain(orm_empleado):
-        """Mapea un objeto ORM Empleado a un objeto de dominio Empleado."""
-        if not orm_empleado:
-            return None
-        
-        rol = None
-        if orm_empleado.rol:
-            rol = Rol(
-                orm_empleado.rol.nombre,
-                orm_empleado.rol.descripcion
-            )
-            
-        return Empleado(
-            orm_empleado.nombre,
-            orm_empleado.apellido,
-            orm_empleado.mail,
-            orm_empleado.telefono,
-            rol
-        )

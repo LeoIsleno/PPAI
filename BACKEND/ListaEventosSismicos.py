@@ -12,7 +12,6 @@ from BACKEND.Modelos.EventoSismico import EventoSismico
 from BACKEND.Modelos.AlcanceSismo import AlcanceSismo as AlcanceDom
 from BACKEND.Modelos.OrigenDeGeneracion import OrigenDeGeneracion as OrigenDom
 from BACKEND.Modelos.Estado import Estado as EstadoDom
-from sqlalchemy.orm import Session
 
 
 class ListarEventosSismicos:
@@ -23,18 +22,28 @@ class ListarEventosSismicos:
     """
 
     @staticmethod
-    def crear_eventos_sismicos(db: Session, 
-                               sismografos_persistentes: Optional[List[Any]] = None,
+    def crear_eventos_sismicos(sismografos_persistentes: Optional[List[Any]] = None,
                                usuario_global: Optional[Any] = None) -> List[EventoSismico]:
-        """Obtener y mapear todos los eventos sísmicos persistidos, usando una sesión externa."""
+        """Obtener y mapear todos los eventos sísmicos persistidos.
+
+        Args:
+            sismografos_persistentes: (opcional) lista de sismógrafos en memoria
+                que podría usarse durante el mapeo (no utilizada actualmente).
+            usuario_global: (opcional) objeto usuario global/contexto.
+
+        Returns:
+            Lista de instancias de `EventoSismico` del dominio.
+
+        Nota:
+            Si hay eventos que no pueden transformarse, se omiten y se
+            registra un DEBUG para facilitar la depuración.
+        """
         eventos_dom: List[EventoSismico] = []
-        
-        # CORRECCIÓN: Usar la sesión 'db' que se pasó como parámetro
-        orm_events = EventoRepository.list_all(db) or []
-        for orm_ev in orm_events:
-            ev_dom = EventoRepository.to_domain(orm_ev)
-            eventos_dom.append(ev_dom)
-            
+        with SessionLocal() as db:
+            orm_events = EventoRepository.list_all(db) or []
+            for orm_ev in orm_events:
+                ev_dom = EventoRepository.to_domain(orm_ev)
+                eventos_dom.append(ev_dom)
         return eventos_dom
 
     @staticmethod
@@ -48,7 +57,7 @@ class ListarEventosSismicos:
         with SessionLocal() as db:
             orms = AlcanceRepository.list_all(db) or []
             for a in orms:
-                resultados.append(AlcanceRepository.to_domain(a)) # <-- USANDO to_domain
+                resultados.append(AlcanceDom(a.descripcion, a.nombre))
         return resultados
 
     @staticmethod
@@ -62,18 +71,21 @@ class ListarEventosSismicos:
         with SessionLocal() as db:
             orms = OrigenRepository.list_all(db) or []
             for o in orms:
-                resultados.append(OrigenRepository.to_domain(o)) # <-- USANDO to_domain
+                resultados.append(OrigenDom(o.nombre, o.descripcion))
         return resultados
 
     @staticmethod
     def obtener_estados() -> List[EstadoDom]:
-        """Leer y mapear todos los estados desde la base de datos."""
+        """Leer y mapear todos los estados desde la base de datos.
+
+        Uses Estado.from_name para crear la instancia concreta del estado.
+        """
         resultados: List[EstadoDom] = []
         with SessionLocal() as db:
             orms = EstadoRepository.list_all(db) or []
             for e in orms:
-                # CORRECCIÓN: Delegar al repositorio para la conversión
-                estado = EstadoRepository.to_domain(e)
+                # Usar fábrica from_name para crear instancia concreta
+                estado = EstadoDom.from_name(e.nombre_estado, e.ambito)
                 resultados.append(estado)
         return resultados
 

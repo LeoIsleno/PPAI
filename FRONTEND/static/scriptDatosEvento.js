@@ -203,41 +203,4 @@ const pantalla = new PantallaRevisionManual();
         });
     }
 
-    const btnVolver = document.getElementById('btnVolver');
-    if (btnVolver) {
-        btnVolver.addEventListener('click', async () => {
-            try {
-                // 1. Mostrar loading y deshabilitar
-                pantalla.showLoading('Liberando evento...');
-
-                // 2. Llamar al backend para revertir el estado
-                const response = await fetch(`${API_BASE}/cancelar_revision`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const data = await response.json();
-                
-                // 3. Manejo de respuesta
-                if (data.success) {
-                    // Éxito: limpiar sesión y redirigir
-                    sessionStorage.removeItem('eventoSeleccionado');
-                    // Mostrar mensaje de éxito no bloqueante (opcional)
-                    window.location.href = 'registrar.html';
-                } else {
-                    // Fallo (ej: no había evento seleccionado o error de persistencia)
-                    alert(data.error || 'Error desconocido al cancelar.');
-                    // Redirigir de todas formas para limpiar la vista actual
-                    window.location.href = 'registrar.html';
-                }
-            } catch (error) {
-                console.error('Error al cancelar revisión:', error);
-                alert('Error de conexión con el servidor al cancelar revisión.');
-                // Fallback
-                window.location.href = 'registrar.html';
-            } finally {
-                pantalla.hideLoading();
-            }
-        });
-    }
 

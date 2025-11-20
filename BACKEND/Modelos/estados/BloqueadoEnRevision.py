@@ -150,29 +150,3 @@ class BloqueadoEnRevision(Estado):
                 evento._cambioEstadoActual = nuevoCambio
             except Exception:
                 pass
-            
-    def volver(self, evento, fechaHoraActual, usuario, cambiosEstado):
-        """Transición desde BloqueadoEnRevision -> EnRevisionAutomatica.
-
-        Cierra el cambio de estado actual (si existe), cambia el estado del
-        evento y crea el nuevo CambioEstado delegando al contexto.
-        """
-        # cerrar cambio actual si existe (buscar en la lista de cambios)
-        self.obtenerCambioEstadoActual(cambiosEstado, fechaHoraActual)
-
-        nuevoEstado = self.crearProximoEstado("Auto-detectado")
-
-        nuevoCambio = self.crearCambioEstado(nuevoEstado, fechaHoraActual, usuario)
-
-        # actualizar estado en el contexto
-        try:
-            evento.setEstadoActual(nuevoEstado)
-        except (AttributeError, TypeError):
-            evento.setEstado(nuevoEstado)
-        try:
-            evento.setCambioEstadoActual(nuevoCambio)
-        except Exception:
-            try:
-                evento._cambioEstadoActual = nuevoCambio
-            except Exception:
-                pass
