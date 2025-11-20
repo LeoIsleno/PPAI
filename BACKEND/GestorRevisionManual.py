@@ -34,7 +34,6 @@ class GestorRevisionManual:
                 if evento.estaAutoDetectado():
                     eventos_auto_detectado.append(evento)
             except Exception:
-                # Ignorar objetos mal formados en la colección
                 continue
         return eventos_auto_detectado
 
